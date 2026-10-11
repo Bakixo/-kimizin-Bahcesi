@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
-/* Layout: one phone-width column. The golden-hour plot is the hero; habit rings sit beneath it as the controls that grow it. */
+/* Layout: one phone-width column with a bottom tab bar. Garden is home; meals fill a calorie bar; tasks grow the garden. */
 :root {
   --bg: #f4eee4;
   --panel: #fffdf8;
@@ -39,7 +39,7 @@
 }
 html, body { height: 100%; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; }
-.app { max-width: 480px; min-height: 100%; margin: 0 auto; box-sizing: border-box; padding-inline: 16px; padding-block: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.app { max-width: 480px; min-height: 100%; margin: 0 auto; box-sizing: border-box; padding-inline: 16px; padding-block: 16px calc(92px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
 
 header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .eyebrow { margin: 0 0 2px; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
@@ -48,7 +48,7 @@ h1 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 32px; 
 .day strong { font-family: var(--display); font-weight: 500; font-size: 26px; line-height: 1; color: var(--plum); font-variant-numeric: tabular-nums; }
 .day span { font-size: 12px; color: var(--ink-soft); }
 
-.stage { position: relative; height: min(50vh, 430px); min-height: 320px; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); touch-action: none; background: #c7d3d8; }
+.stage { position: relative; height: min(54vh, 460px); min-height: 320px; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); touch-action: none; background: #c7d3d8; }
 .stage canvas { display: block; width: 100%; height: 100%; }
 .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(40, 24, 10, 0.22)); }
 .toast { position: absolute; z-index: 1; left: 50%; bottom: 16px; transform: translate(-50%, 0); width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; padding: 10px 16px; border-radius: 999px; background: var(--glass); color: var(--ink); font-weight: 700; font-size: 14px; text-align: center; box-shadow: var(--shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity .35s, transform .35s; }
@@ -60,73 +60,197 @@ h1 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 32px; 
 .chip svg { width: 15px; height: 15px; flex: none; fill: none; stroke: var(--leaf); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .chip .sep { width: 1px; height: 12px; background: var(--line); }
 
-.habits { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.habit { position: relative; border: 0; border-radius: 20px; background: var(--panel); box-shadow: var(--shadow); color: var(--ink); font: inherit; padding: 10px 2px 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; transition: transform .15s; }
-.habit:active { transform: scale(.96); }
-.ring { position: relative; width: 46px; height: 46px; }
-.ring svg.track { position: absolute; inset: 0; transform: rotate(-90deg); }
-.ring circle { fill: none; stroke-width: 4; }
-.ring .bg { stroke: var(--ring-track); }
-.ring .fg { stroke: var(--olive); stroke-linecap: round; transition: stroke-dashoffset .5s cubic-bezier(.3,1.4,.5,1), stroke .3s; }
-.habit.done .ring .fg { stroke: var(--plum); }
-.ring svg.icon { position: absolute; inset: 11px; width: 24px; height: 24px; fill: none; stroke: var(--leaf); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.habit .label { font-size: 12px; font-weight: 800; }
-.habit .n { font-size: 11px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-
 .foot { display: flex; flex-direction: column; gap: 10px; }
 .hard { min-height: 50px; border: 0; border-radius: 25px; background: var(--fig-soft); color: var(--plum); font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; }
 .legend { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-soft); text-align: center; text-wrap: balance; }
-button:focus-visible { outline: 2px solid var(--plum); outline-offset: 3px; }
+[hidden] { display: none !important; }
+.view { display: flex; flex-direction: column; gap: 14px; }
+.card { background: var(--panel); border-radius: 22px; box-shadow: var(--shadow); padding: 14px 16px; }
+button.card { border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.k { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.v { font-family: var(--display); font-size: 22px; font-weight: 600; color: var(--leaf); font-variant-numeric: tabular-nums; line-height: 1; }
+.v small { font-family: var(--body); font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bar { position: relative; display: block; height: 10px; border-radius: 999px; background: var(--ring-track); overflow: hidden; }
+.bar > i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: var(--olive); transition: width .6s cubic-bezier(.3,1.2,.5,1), background .3s; }
+.bar.full > i { background: var(--plum); }
+.bar.big { height: 18px; }
+.dots { display: flex; gap: 5px; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--ring-track); }
+.dots i.on { background: var(--olive); }
+h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 28px; line-height: 1.05; color: var(--leaf); text-wrap: balance; }
+.sub { margin: 6px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-soft); }
+.note { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.kcal-card { display: flex; flex-direction: column; gap: 10px; }
+.kcal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.kcal-num { font-family: var(--display); font-size: 40px; font-weight: 600; line-height: 1; color: var(--leaf); font-variant-numeric: tabular-nums; }
+.kcal-num small { font-family: var(--body); font-size: 14px; font-weight: 700; color: var(--ink-soft); }
+.add { display: flex; flex-direction: column; gap: 10px; }
+.meal-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.pill[aria-pressed="true"] { background: var(--olive); border-color: var(--olive); color: var(--panel); }
+.field { display: flex; gap: 8px; }
+.app input, .app select { flex: 1; min-width: 0; min-height: 46px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; }
+.btn { min-height: 46px; padding: 0 18px; border: 0; border-radius: 14px; background: var(--plum); color: var(--panel); font: inherit; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.btn.soft { background: var(--fig-soft); color: var(--plum); }
+.btn:disabled { opacity: .6; cursor: default; }
+.ask { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: var(--fig-soft); }
+.ask p { margin: 0; font-size: 13px; font-weight: 700; color: var(--plum); }
+.meal-group + .meal-group { margin-top: 12px; }
+.meal-group h3 { display: flex; justify-content: space-between; margin: 0 0 2px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.food { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+.food .t { flex: 1; min-width: 0; }
+.food .t b { display: block; font-size: 14.5px; }
+.food .t span { font-size: 12px; color: var(--ink-soft); }
+.food .kc { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.x { width: 36px; height: 36px; flex: none; border: 0; border-radius: 50%; background: transparent; color: var(--ink-soft); font-size: 20px; line-height: 1; cursor: pointer; }
+.empty { margin: 0; padding: 6px 0; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
+.tasks { display: flex; flex-direction: column; }
+.task { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.task:first-child { border-top: 0; padding-top: 2px; }
+.task .ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--bg); }
+.task .ic svg { width: 24px; height: 24px; fill: none; stroke: var(--leaf); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.task.done .ic { background: var(--olive); }
+.task.done .ic svg { stroke: var(--panel); }
+.task .t b { font-size: 15px; }
+.task .t .amt { float: right; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.task .bar { margin: 7px 0 5px; height: 8px; }
+.reward { display: block; font-size: 11.5px; font-weight: 700; color: var(--olive); }
+.step { display: flex; align-items: center; gap: 4px; }
+.step button { width: 44px; height: 44px; border: 0; border-radius: 14px; background: var(--fig-soft); color: var(--plum); font: inherit; font-size: 22px; font-weight: 800; cursor: pointer; }
+.step button.minus { width: 30px; background: transparent; color: var(--ink-soft); font-size: 20px; }
+.step button.toggle { width: auto; padding: 0 12px; font-size: 13px; }
+.step .auto { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); text-align: right; max-width: 76px; line-height: 1.3; }
+details.card > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; font-weight: 800; color: var(--plum); cursor: pointer; list-style: none; }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::after { content: "+"; font-size: 20px; }
+details.card[open] > summary::after { content: "–"; }
+.form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.f { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.result { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 14px; background: var(--bg); }
+.result b { font-family: var(--display); font-size: 22px; color: var(--leaf); font-variant-numeric: tabular-nums; }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; padding: 6px 16px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--glass); border-top: 1px solid var(--line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.tabbar nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 448px; margin: 0 auto; }
+.tab { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 52px; padding: 6px 0; border: 0; border-radius: 14px; background: transparent; color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-selected="true"] { background: var(--fig-soft); color: var(--plum); }
+.badge { position: absolute; top: 3px; left: calc(50% + 7px); display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--plum); color: var(--panel); font-size: 10px; }
+button:focus-visible, .app input:focus-visible, .app select:focus-visible, summary:focus-visible { outline: 2px solid var(--plum); outline-offset: 3px; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #4a3d30; background: #e9e0d2; }
-@media (max-width: 370px) { .ring { width: 40px; height: 40px; } .ring svg.icon { inset: 9px; width: 22px; height: 22px; } .habit .label { font-size: 11px; } }
 </style>
 
 <div class="app">
-  <header>
-    <div>
-      <p class="eyebrow">İkimizin Bahçesi</p>
-      <h1>Bahçemiz</h1>
+  <section class="view" id="view-bahce" aria-label="Bahçe">
+    <header>
+      <div>
+        <p class="eyebrow">İkimizin Bahçesi</p>
+        <h1>Bahçemiz</h1>
+      </div>
+      <div class="day"><strong>12</strong><span>gündür büyüyor</span></div>
+    </header>
+
+    <div class="stage" id="stage">
+      <div class="chip" id="wxChip"><strong id="clockTime">--:--</strong><span id="clockDate"></span><i class="sep"></i><svg id="wxIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><strong id="wxTemp"></strong></div>
+      <div class="toast quiet" id="toast" role="status" aria-live="polite"></div>
     </div>
-    <div class="day"><strong>12</strong><span>gündür büyüyor</span></div>
-  </header>
 
-  <div class="stage" id="stage">
-    <div class="chip" id="wxChip"><strong id="clockTime">--:--</strong><span id="clockDate"></span><i class="sep"></i><svg id="wxIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><strong id="wxTemp"></strong></div>
-    <div class="toast quiet" id="toast" role="status" aria-live="polite"></div>
-  </div>
+    <div class="summary">
+      <button class="card" type="button" data-go="ogunler">
+        <span class="k">Bugünkü kalori</span>
+        <span class="v" id="sumKcal">0</span>
+        <span class="bar" id="sumKcalBar"><i></i></span>
+      </button>
+      <button class="card" type="button" data-go="gorevler">
+        <span class="k">Görevler</span>
+        <span class="v" id="sumTasks">0</span>
+        <span class="dots" id="sumDots"></span>
+      </button>
+    </div>
 
-  <div class="habits" role="group" aria-label="Bugünün alışkanlıkları">
-    <button class="habit" data-key="water" type="button" aria-label="Su: bir bardak ekle">
-      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 C8 9 6 12 6 15 A6 6 0 0 0 18 15 C18 12 16 9 12 3 Z"/></svg></span>
-      <span class="label">Su</span><span class="n"></span>
-    </button>
-    <button class="habit" data-key="produce" type="button" aria-label="Sebze ve meyve: bir porsiyon ekle">
-      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 C5 10 11 5 19 5 C19 13 14 19 5 19 Z M5 19 L13 11"/></svg></span>
-      <span class="label">Sebze</span><span class="n"></span>
-    </button>
-    <button class="habit" data-key="meal" type="button" aria-label="Düzenli öğün: bir öğün ekle">
-      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 A8 8 0 1 0 20 12 A8 8 0 1 0 4 12 Z M8 12 A4 4 0 1 0 16 12 A4 4 0 1 0 8 12 Z"/></svg></span>
-      <span class="label">Öğün</span><span class="n"></span>
-    </button>
-    <button class="habit" data-key="walk" type="button" aria-label="Yürüyüş: işaretle">
-      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4 C10 4 11 6 11 9 C11 12 10 14 8 14 C6 14 5 12 5 9 C5 6 6 4 8 4 Z M16 10 C18 10 19 12 19 14 C19 17 18 19 16 19 C14 19 13 17 13 14 C13 12 14 10 16 10 Z"/></svg></span>
-      <span class="label">Yürüyüş</span><span class="n"></span>
-    </button>
-    <button class="habit" data-key="sleep" type="button" aria-label="Uyku: işaretle">
-      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14 A8 8 0 1 1 10 4 A6 6 0 0 0 20 14 Z"/></svg></span>
-      <span class="label">Uyku</span><span class="n"></span>
-    </button>
-  </div>
+    <div class="foot">
+      <button class="hard" id="hard" type="button">Bugün zor bir gün</button>
+      <p class="legend">Görevleri tamamladıkça bahçen büyür: su ekinleri büyütür, sebze yeni ekin açar, öğünler çiçek ve ağaç getirir.</p>
+    </div>
+  </section>
 
-  <div class="foot">
-    <button class="hard" id="hard" type="button">Bugün zor bir gün</button>
-    <p class="legend">Su ekinleri büyütür · sebze yeni ekin açar · öğün çiçek ve ağaç getirir · yürüyüş kelebek · uyku ateş böceği</p>
-  </div>
+  <section class="view" id="view-ogunler" aria-label="Öğünler" hidden>
+    <div>
+      <h2>Bugün ne yedin?</h2>
+      <p class="sub">Yazman yeterli. "2 yumurta, 1 dilim ekmek" gibi; ortalama kaloriyi uygulama bulur.</p>
+    </div>
+
+    <div class="card kcal-card">
+      <div class="kcal-head"><span class="kcal-num" id="kcalNum">0</span><span class="note" id="kcalLeft"></span></div>
+      <span class="bar big" id="kcalBar"><i></i></span>
+      <p class="note" id="kcalMsg"></p>
+    </div>
+
+    <form class="card add" id="addForm" autocomplete="off">
+      <div class="meal-pick" id="mealPick" role="group" aria-label="Hangi öğün"></div>
+      <div class="field">
+        <input id="foodInput" type="text" placeholder="örn. 2 yumurta, 1 dilim ekmek" aria-label="Ne yedin">
+        <button class="btn" id="addBtn" type="submit">Ekle</button>
+      </div>
+      <div class="ask" id="askBox" hidden></div>
+      <p class="note">Kaloriler ortalama değerlerdir; porsiyona göre değişebilir.</p>
+    </form>
+
+    <div class="card" id="mealList"></div>
+
+    <details class="card" id="calcBox">
+      <summary><span>Günlük hedef: <span id="targetLbl"></span></span></summary>
+      <div class="form">
+        <div class="grid2">
+          <label class="f">Cinsiyet<select id="pSex"><option value="f">Kadın</option><option value="m">Erkek</option></select></label>
+          <label class="f">Yaş<input id="pAge" type="number" inputmode="numeric" min="14" max="90"></label>
+          <label class="f">Boy (cm)<input id="pHeight" type="number" inputmode="numeric" min="120" max="220"></label>
+          <label class="f">Ağırlık (kg)<input id="pWeight" type="number" inputmode="decimal" min="35" max="250"></label>
+        </div>
+        <label class="f">Gün içinde ne kadar hareketlisin?<select id="pAct">
+          <option value="1.2">Çoğunlukla oturuyorum</option>
+          <option value="1.375">Hafif hareketli (haftada 1–3 gün spor)</option>
+          <option value="1.55">Orta (haftada 3–5 gün spor)</option>
+          <option value="1.725">Çok hareketli (neredeyse her gün)</option>
+        </select></label>
+        <label class="f">Amacın<select id="pGoal">
+          <option value="0">Şu anki hâlimi korumak</option>
+          <option value="-300">Yavaş ve rahat ilerlemek</option>
+          <option value="-500">Biraz daha belirgin ilerlemek</option>
+        </select></label>
+        <div class="result"><span class="note">Önerilen günlük hedef</span><b id="pResult">—</b></div>
+        <button class="btn" id="useTarget" type="button">Bu hedefi kullan</button>
+        <label class="f">Ya da hedefi kendin yaz<input id="pManual" type="number" inputmode="numeric" min="1000" max="5000" step="50"></label>
+        <p class="note">Hesap Mifflin-St Jeor formülüyle yapılır ve 1.400 kcal'nin altına inmez. Kesin bir ihtiyaç için bir diyetisyene danışmak en iyisi.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="view" id="view-gorevler" aria-label="Görevler" hidden>
+    <div>
+      <h2>Bugünün görevleri</h2>
+      <p class="sub">Her adım bahçene bir şey katar. Sonra bahçeye dönüp neler değiştiğine bak.</p>
+    </div>
+    <div class="card tasks" id="taskList"></div>
+    <details class="card">
+      <summary><span>Hedefleri düzenle</span></summary>
+      <div class="form grid2" id="targetForm"></div>
+    </details>
+  </section>
+</div>
+
+<div class="tabbar">
+  <nav role="tablist" aria-label="Bölümler">
+    <button class="tab" role="tab" type="button" data-tab="bahce" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21v-8M12 13c0-4-3-6-7-6 0 4 3 6 7 6ZM12 11c0-4 3-7 7-7 0 4-3 7-7 7ZM5 21h14"/></svg>Bahçe<span class="badge" id="gardenBadge" hidden></span>
+    </button>
+    <button class="tab" role="tab" type="button" data-tab="ogunler" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18a9 9 0 0 1-18 0ZM8 8c0-2 2-2 2-4M13 8c0-2 2-2 2-4"/></svg>Öğünler
+    </button>
+    <button class="tab" role="tab" type="button" data-tab="gorevler" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Görevler
+    </button>
+  </nav>
 </div>
 
 <script type="importmap">
@@ -145,6 +269,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const stage = document.getElementById('stage');
 const toastEl = document.getElementById('toast');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let replaying = false; // true while rebuilding today's garden from saved progress, so nothing animates
 
 let toastTimer;
 function toast(text) {
@@ -153,21 +278,6 @@ function toast(text) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.add('quiet'), 2800);
 }
-
-// ---------- habit rings ----------
-const counts = { water: 5, produce: 2, meal: 2, walk: 0, sleep: 1 };
-const targets = { water: 8, produce: 5, meal: 3, walk: 1, sleep: 1 };
-const CIRC = 2 * Math.PI * 20;
-function paintHabit(key) {
-  const btn = document.querySelector(`.habit[data-key="${key}"]`);
-  const fg = btn.querySelector('.fg');
-  const ratio = Math.min(1, counts[key] / targets[key]);
-  fg.style.strokeDasharray = CIRC;
-  fg.style.strokeDashoffset = CIRC * (1 - ratio);
-  btn.classList.toggle('done', ratio >= 1);
-  btn.querySelector('.n').textContent = targets[key] === 1 ? (counts[key] ? 'tamam' : '—') : `${counts[key]} / ${targets[key]}`;
-}
-Object.keys(counts).forEach(paintHabit);
 
 // ---------- renderer ----------
 let renderer;
@@ -285,7 +395,7 @@ function part(geo, hex, { x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, jit = 0, 
 // ---------- tweens and sparkles ----------
 const tweens = [];
 function tween(obj, prop, to, dur = 700, ease = backOut, delay = 0) {
-  if (reduceMotion) { obj[prop] = to; return; }
+  if (reduceMotion || replaying) { obj[prop] = to; return; }
   tweens.push({ obj, prop, from: null, to, t0: performance.now() + delay, dur, ease });
 }
 function backOut(t) { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); }
@@ -306,7 +416,7 @@ function glowSprite(size, color = '#ffffff') {
 }
 const sparkles = [];
 function sparkle(at) {
-  if (reduceMotion) return;
+  if (reduceMotion || replaying) return;
   for (let k = 0; k < 10; k++) {
     const s = glowSprite(0.18 + rand() * 0.12, rand() > 0.5 ? '#fff1c4' : '#ffd7e6');
     s.position.set(at.x + (rand() - 0.5) * 0.7, 0.2 + rand() * 0.3, at.z + (rand() - 0.5) * 0.7);
@@ -525,7 +635,7 @@ const dropGeo = new THREE.ConeGeometry(0.025, 0.12, 4);
 const dropMat = new THREE.MeshStandardMaterial({ color: '#a9d4f0', transparent: true, opacity: 0.85, roughness: 0.2 });
 const drops = [];
 function rain() {
-  if (reduceMotion) return;
+  if (reduceMotion || replaying) return;
   for (let k = 0; k < 45; k++) {
     const d = new THREE.Mesh(dropGeo, dropMat);
     d.rotation.x = Math.PI;
@@ -566,7 +676,7 @@ function addFireflies(count) {
 }
 // ---------- starting garden: twelve days of earlier care ----------
 // W wheat, T tree, C carrot, p pumpkin, P one giant pumpkin over a 2x2 block, F sunflower, B flower bush, . free for today
-const LAYOUT = ['WWTCpW', 'WPPCTW', 'CPPWpC', 'TpCF..', 'WWCB..', 'CTWp..'];
+const LAYOUT = ['WWTCpW', 'WPPCTW', 'CPPWpC', 'TpCF..', 'WWC...', 'CT....'];
 const KIND = { W: 'wheat', T: 'tree', C: 'carrot', p: 'pumpkin', F: 'sunflower', B: 'bush' };
 let giantPlaced = false;
 LAYOUT.forEach((row, i) => [...row].forEach((ch, j) => {
@@ -811,41 +921,476 @@ loadWeather();
 setInterval(updateSky, 30000);
 setInterval(loadWeather, 15 * 60000);
 
-// ---------- habit actions ----------
+// ---------- garden actions: what each task does to the plot ----------
 const produceCycle = ['carrot', 'pumpkin', 'wheat'];
 const mealCycle = ['bush', 'tree', 'sunflower'];
+const played = { water: 0, walk: 0, produce: 0, meals: 0, sleep: 0 };
 const FULL = 'Bugünlük boş tarla kalmadı. Uygulamada tarla günler geçtikçe genişleyecek.';
 const actions = {
   water() {
+    played.water += 1;
     rain();
     const growing = crops.filter((c) => c.stage < 4);
-    growing.slice(0, 4).forEach((c, k) => setTimeout(() => growTo(c, c.stage + 1), reduceMotion ? 0 : 500 + k * 120));
+    if (reduceMotion || replaying) growing.slice(0, 4).forEach((c) => growTo(c, c.stage + 1));
+    else growing.slice(0, 4).forEach((c, k) => setTimeout(() => growTo(c, c.stage + 1), 500 + k * 120));
     return growing.length ? 'Ekinler suyunu aldı, biraz daha büyüdüler.' : 'Toprak suyunu aldı, her şey yerinde.';
   },
   produce() {
-    const crop = plant(produceCycle[counts.produce % produceCycle.length], 1);
+    const crop = plant(produceCycle[played.produce++ % produceCycle.length], 1, !replaying);
     return crop ? 'Yeni bir ekin filizlendi.' : FULL;
   },
-  meal() {
-    const kind = mealCycle[counts.meal % mealCycle.length];
-    const crop = plant(kind, 2);
+  meals() {
+    const kind = mealCycle[played.meals++ % mealCycle.length];
+    const crop = plant(kind, 2, !replaying);
     if (!crop) return FULL;
     return kind === 'tree' ? 'Yeni bir ağaç kök saldı.' : kind === 'sunflower' ? 'Ayçiçekleri güne döndü.' : 'Bir çiçek açtı.';
   },
-  walk() { addButterfly(); return 'Bir kelebek bahçene uğradı.'; },
-  sleep() { addFireflies(8); return 'Ateş böcekleri geldi. İyi uykular.'; },
+  walk() { played.walk += 1; addButterfly(); return 'Bir kelebek bahçene uğradı.'; },
+  sleep() { played.sleep += 1; addFireflies(8); return 'Ateş böcekleri geldi. İyi uykular.'; },
 };
-document.querySelectorAll('.habit').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const key = btn.dataset.key;
-    counts[key] += 1;
-    paintHabit(key);
-    toast(actions[key]());
+const DONE_TEXT = {
+  water: 'Su görevi tamam. Bütün ekinler güneşe uzandı.',
+  walk: 'Yürüyüş tamam. Kelebekler bahçede dans ediyor.',
+  produce: 'Sebze ve meyve tamam. Tarlan rengârenk.',
+  meals: 'Öğünlerin düzenli. Bahçe çiçek açtı.',
+  sleep: 'İyi dinlendin. Bahçe de seninle dinlendi.',
+};
+function finishBonus(key) {
+  if (key === 'water') crops.forEach((c, k) => { if (c.stage >= 4) return; if (replaying) growTo(c, 4); else setTimeout(() => growTo(c, 4), k * 40); });
+  if (!replaying) sparkle({ x: 0, z: 0 });
+}
+
+// ---------- day state (kept in this browser only) ----------
+const STORE = 'bahce-prototip-v1';
+// The day turns over at 04:00 Istanbul time, so a late snack still counts for the evening it belongs to.
+function dayKey() { return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(now().getTime() - 4 * 3600000)); }
+const DEFAULT_TARGETS = { water: 2, walk: 30, produce: 5, meals: 3, sleep: 7 };
+function freshDay() { return { day: dayKey(), foods: [], tasks: { water: 0, walk: 0, produce: 0, sleep: 0 } }; }
+let state = { ...freshDay(), targets: { ...DEFAULT_TARGETS }, kcalTarget: 1800, profile: { sex: 'f', age: 26, height: 165, weight: 65, act: '1.375', goal: '-300' } };
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+  if (saved) {
+    state = { ...state, ...saved, targets: { ...DEFAULT_TARGETS, ...saved.targets }, profile: { ...state.profile, ...saved.profile } };
+    if (state.day !== dayKey()) Object.assign(state, freshDay());
+  }
+} catch { /* storage unavailable: start fresh */ }
+function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch { /* keep working without storage */ } }
+
+const fmt = (n) => Math.round(n).toLocaleString('tr-TR');
+const MEALS = [['kahvalti', 'Kahvaltı'], ['ogle', 'Öğle'], ['aksam', 'Akşam'], ['ara', 'Ara öğün']];
+function defaultMeal() {
+  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', hour12: false }).format(now()));
+  return h >= 4 && h < 11 ? 'kahvalti' : h < 15 ? 'ogle' : h < 18 ? 'ara' : h < 23 ? 'aksam' : 'ara';
+}
+const mealsDone = () => new Set(state.foods.filter((f) => f.meal !== 'ara').map((f) => f.meal)).size;
+const kcalTotal = () => state.foods.reduce((s, f) => s + f.kcal, 0);
+
+// ---------- food table: average Turkish portions ----------
+// [aliases, base unit, kcal per base unit, kcal for other units]
+const FOODS = [
+  ['yumurta|haşlanmış yumurta|haslanmis yumurta', 'adet', 75, { g: 1.55 }],
+  ['omlet', 'porsiyon', 200],
+  ['menemen', 'porsiyon', 260],
+  ['sucuklu yumurta', 'porsiyon', 380],
+  ['ekmek|beyaz ekmek', 'dilim', 70, { g: 2.65 }],
+  ['tam buğday ekmek|tam bugday ekmek|kepekli ekmek|çavdar ekmek', 'dilim', 65, { g: 2.4 }],
+  ['simit', 'adet', 280],
+  ['poğaça|pogaca', 'adet', 250],
+  ['açma|acma', 'adet', 300],
+  ['börek|borek', 'dilim', 300, { porsiyon: 350 }],
+  ['beyaz peynir|peynir', 'dilim', 75, { g: 2.6, porsiyon: 90 }],
+  ['kaşar|kasar', 'dilim', 100, { g: 3.6 }],
+  ['zeytin', 'adet', 7, { porsiyon: 70, kase: 120 }],
+  ['domates', 'adet', 22],
+  ['salatalık|salatalik|hıyar', 'adet', 15],
+  ['bal', 'yk', 60, { tk: 30, çk: 20 }],
+  ['reçel|recel', 'yk', 50, { tk: 25, çk: 17 }],
+  ['tereyağı|tereyagi', 'tk', 35, { yk: 100, g: 7.2 }],
+  ['tahin pekmez', 'yk', 110],
+  ['fıstık ezmesi|fistik ezmesi', 'yk', 95, { tk: 45 }],
+  ['şekersiz çay|çay|cay', 'bardak', 2],
+  ['şekerli çay|sekerli cay', 'bardak', 22],
+  ['türk kahvesi|turk kahvesi', 'fincan', 15],
+  ['filtre kahve|kahve', 'fincan', 5, { bardak: 5 }],
+  ['latte|sütlü kahve|sutlu kahve', 'bardak', 150, { fincan: 150 }],
+  ['süt|sut', 'bardak', 120],
+  ['ayran', 'bardak', 70, { kutu: 70 }],
+  ['yoğurt|yogurt', 'kase', 120, { yk: 15, g: 0.6 }],
+  ['kefir', 'bardak', 110],
+  ['portakal suyu|meyve suyu', 'bardak', 110, { kutu: 110 }],
+  ['kola|gazoz', 'kutu', 140, { bardak: 90 }],
+  ['mercimek çorbası|mercimek corbasi|mercimek', 'kase', 150, { porsiyon: 150 }],
+  ['ezogelin', 'kase', 160, { porsiyon: 160 }],
+  ['tavuk çorbası|tavuk corbasi', 'kase', 120, { porsiyon: 120 }],
+  ['domates çorbası|domates corbasi', 'kase', 130, { porsiyon: 130 }],
+  ['yayla çorbası|yayla corbasi', 'kase', 140, { porsiyon: 140 }],
+  ['çorba|corba', 'kase', 140, { porsiyon: 140 }],
+  ['pilav|pirinç pilavı', 'porsiyon', 250, { kase: 250, yk: 30 }],
+  ['bulgur pilavı|bulgur', 'porsiyon', 200, { kase: 200, yk: 25 }],
+  ['makarna', 'porsiyon', 350, { kase: 300, g: 1.6 }],
+  ['kuru fasulye|kurufasulye', 'porsiyon', 300, { kase: 300 }],
+  ['nohut', 'porsiyon', 280, { kase: 280 }],
+  ['taze fasulye', 'porsiyon', 150, { kase: 150 }],
+  ['ıspanak|ispanak', 'porsiyon', 150, { kase: 150 }],
+  ['türlü|turlu', 'porsiyon', 200, { kase: 200 }],
+  ['karnıyarık|karniyarik', 'porsiyon', 350],
+  ['imam bayıldı|imam bayildi', 'porsiyon', 250],
+  ['sarma|yaprak sarma', 'adet', 40, { porsiyon: 280 }],
+  ['dolma|biber dolması', 'adet', 60, { porsiyon: 300 }],
+  ['mantı|manti', 'porsiyon', 450],
+  ['lahmacun', 'adet', 230],
+  ['pide', 'adet', 500, { dilim: 125, porsiyon: 500 }],
+  ['döner dürüm|doner durum|dürüm|durum', 'adet', 600],
+  ['iskender', 'porsiyon', 750],
+  ['döner|doner', 'porsiyon', 450],
+  ['köfte|kofte', 'adet', 70, { porsiyon: 350 }],
+  ['tavuk göğsü|tavuk gogsu|ızgara tavuk|izgara tavuk', 'porsiyon', 220, { g: 1.65 }],
+  ['tavuk şiş|tavuk sis', 'porsiyon', 300],
+  ['tavuk', 'porsiyon', 250, { g: 1.9 }],
+  ['balık|balik|somon|levrek|hamsi', 'porsiyon', 250, { g: 1.8 }],
+  ['ton balığı|ton baligi', 'kutu', 180],
+  ['hamburger', 'adet', 500],
+  ['pizza', 'dilim', 280],
+  ['tost', 'adet', 300],
+  ['kumpir', 'adet', 600],
+  ['çiğ köfte|cig kofte', 'adet', 350, { porsiyon: 350 }],
+  ['patates kızartması|patates kizartmasi|kızartma', 'porsiyon', 350],
+  ['haşlanmış patates|patates', 'adet', 130],
+  ['çoban salata|coban salata|salata', 'kase', 90, { porsiyon: 90, tabak: 90 }],
+  ['cacık|cacik', 'kase', 90],
+  ['humus', 'yk', 30, { kase: 250 }],
+  ['elma', 'adet', 80],
+  ['muz', 'adet', 105],
+  ['portakal', 'adet', 60],
+  ['mandalina', 'adet', 40],
+  ['armut', 'adet', 100],
+  ['üzüm|uzum', 'kase', 100, { avuç: 50 }],
+  ['çilek|cilek', 'kase', 50, { adet: 5 }],
+  ['karpuz', 'dilim', 85],
+  ['kavun', 'dilim', 60],
+  ['kayısı|kayisi', 'adet', 17],
+  ['şeftali|seftali', 'adet', 60],
+  ['kivi', 'adet', 45],
+  ['hurma', 'adet', 23],
+  ['kuru kayısı|kuru kayisi', 'adet', 17],
+  ['ceviz', 'avuç', 180, { adet: 26 }],
+  ['badem', 'avuç', 160, { adet: 7 }],
+  ['fındık|findik', 'avuç', 180, { adet: 9 }],
+  ['fıstık|fistik|yer fıstığı', 'avuç', 170],
+  ['yulaf|yulaf ezmesi', 'kase', 150, { yk: 30, g: 3.7 }],
+  ['granola|müsli|musli', 'kase', 250],
+  ['baklava', 'dilim', 160, { porsiyon: 480 }],
+  ['sütlaç|sutlac', 'kase', 250],
+  ['künefe|kunefe', 'porsiyon', 600],
+  ['dondurma', 'top', 100],
+  ['çikolata|cikolata', 'kare', 25, { adet: 230, paket: 230 }],
+  ['kek', 'dilim', 250],
+  ['kurabiye', 'adet', 80],
+  ['bisküvi|biskuvi', 'adet', 40, { paket: 400 }],
+  ['lokum', 'adet', 40],
+  ['cips', 'paket', 270],
+  ['patlamış mısır|patlamis misir', 'kase', 100],
+].map(([names, unit, kcal, units = {}]) => ({ names: names.split('|'), unit, kcal, units }));
+
+const NUMBER_WORDS = { bir: 1, iki: 2, 'üç': 3, uc: 3, 'dört': 4, dort: 4, 'beş': 5, bes: 5, 'altı': 6, alti: 6, yedi: 7, sekiz: 8, dokuz: 9, on: 10, 'yarım': 0.5, yarim: 0.5, 'çeyrek': 0.25 };
+const UNIT_WORDS = [
+  ['yemek kaşığı', 'yk'], ['yemek kasigi', 'yk'], ['tatlı kaşığı', 'tk'], ['tatli kasigi', 'tk'], ['çay kaşığı', 'çk'], ['kaşık', 'yk'], ['kasik', 'yk'],
+  ['su bardağı', 'bardak'], ['bardak', 'bardak'], ['fincan', 'fincan'], ['kase', 'kase'], ['kâse', 'kase'], ['tabak', 'porsiyon'], ['porsiyon', 'porsiyon'],
+  ['dilim', 'dilim'], ['adet', 'adet'], ['tane', 'adet'], ['avuç', 'avuç'], ['avuc', 'avuç'], ['top', 'top'], ['kutu', 'kutu'], ['şişe', 'kutu'],
+  ['paket', 'paket'], ['kare', 'kare'], ['salkım', 'kase'], ['gram', 'g'], ['gr', 'g'], ['g', 'g'],
+];
+const norm = (s) => s.toLocaleLowerCase('tr').replace(/â/g, 'a').replace(/[^\p{L}\p{N}.,\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+
+// "2 yumurta", "bir buçuk dilim ekmek", "200 g tavuk" -> { label, kcal } or null when the table does not know it.
+function estimate(segment) {
+  let rest = norm(segment), qty = 1;
+  const num = rest.match(/^(\d+(?:[.,]\d+)?)\s*/);
+  if (num) { qty = parseFloat(num[1].replace(',', '.')); rest = rest.slice(num[0].length); }
+  else {
+    const word = rest.split(' ')[0];
+    if (word in NUMBER_WORDS) { qty = NUMBER_WORDS[word]; rest = rest.slice(word.length).trim(); }
+  }
+  if (rest.startsWith('buçuk ') || rest.startsWith('bucuk ')) { qty += 0.5; rest = rest.slice(6).trim(); }
+  let unit = null;
+  for (const [w, u] of UNIT_WORDS) {
+    if (rest === w || rest.startsWith(w + ' ') || rest.startsWith(w + 'ı ') || rest.startsWith(w + 'i ')) { unit = u; rest = rest.slice(w.length).replace(/^[ıi]?\s*/, ''); break; }
+  }
+  let best = null, bestLen = 0;
+  for (const food of FOODS) {
+    for (const name of food.names) {
+      const re = new RegExp(`(^|\\s)${name}`, 'u');
+      if (name.length > bestLen && re.test(rest)) { best = food; bestLen = name.length; }
+    }
+  }
+  if (!best || !(qty > 0)) return null;
+  let per;
+  if (unit === 'g') { if (!best.units.g) return null; per = best.units.g; }
+  else per = unit && unit !== best.unit && best.units[unit] ? best.units[unit] : best.kcal;
+  return { label: segment.trim(), kcal: Math.round(qty * per), src: 'tablo' };
+}
+const splitFoods = (text) => text.split(/,|\+|;|\n|\s+ve\s+|\s+ile\s+/i).map((s) => s.trim()).filter(Boolean);
+
+// Foods the table does not know go to Claude when this page runs inside Claude; otherwise the person types the kcal.
+let samplePromise = null;
+function getSample() {
+  if (!samplePromise) samplePromise = window.claude?.use ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
+  return samplePromise;
+}
+async function askClaude(items) {
+  const sample = await getSample();
+  if (!sample) return null;
+  const prompt = `Türkiye'de yaygın ortalama porsiyonlara göre aşağıdaki yiyeceklerin her biri için yaklaşık kaloriyi tahmin et. Miktar yazılmışsa ona göre hesapla. Yalnızca şu biçimde JSON döndür: {"items":[{"ad":"yazıldığı gibi","kcal":sayı}]}\n\n${items.map((t) => `- ${t}`).join('\n')}`;
+  const out = await sample.json(prompt, { modelTier: 'quick' });
+  const list = Array.isArray(out?.items) ? out.items : [];
+  return items.map((label, k) => {
+    const kcal = Number(list[k]?.kcal);
+    return Number.isFinite(kcal) && kcal >= 0 && kcal < 4000 ? { label, kcal: Math.round(kcal), src: 'claude' } : null;
   });
+}
+
+// ---------- öğünler view ----------
+let currentMeal = defaultMeal();
+const mealPick = document.getElementById('mealPick');
+function paintMealPick() {
+  mealPick.innerHTML = MEALS.map(([id, name]) => `<button class="pill" type="button" data-meal="${id}" aria-pressed="${id === currentMeal}">${name}</button>`).join('');
+}
+mealPick.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-meal]');
+  if (b) { currentMeal = b.dataset.meal; paintMealPick(); }
 });
+
+const askBox = document.getElementById('askBox');
+const foodInput = document.getElementById('foodInput');
+const addBtn = document.getElementById('addBtn');
+let pendingManual = null;
+
+function addEntry(items) {
+  const before = mealsDone();
+  state.foods.push({ id: Date.now(), meal: currentMeal, items, kcal: items.reduce((s, i) => s + i.kcal, 0) });
+  save();
+  const after = mealsDone();
+  for (let k = before; k < after; k++) earn('meals', k + 1 === state.targets.meals);
+  paintAll();
+}
+
+document.getElementById('addForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = foodInput.value.trim();
+  if (!text) return;
+  const parts = splitFoods(text);
+  const found = parts.map(estimate);
+  const unknown = parts.filter((_, k) => !found[k]);
+  if (unknown.length) {
+    addBtn.disabled = true;
+    addBtn.textContent = 'Bakıyorum…';
+    let guessed = null;
+    try { guessed = await askClaude(unknown); } catch { guessed = null; }
+    addBtn.disabled = false;
+    addBtn.textContent = 'Ekle';
+    let u = 0;
+    parts.forEach((_, k) => { if (!found[k]) found[k] = guessed ? guessed[u++] : null; });
+  }
+  const missing = parts.filter((_, k) => !found[k]);
+  if (missing.length) {
+    pendingManual = { known: found.filter(Boolean), missing };
+    askBox.innerHTML = `<p>Bunların kalorisini bulamadım. Yaklaşık değeri yazar mısın?</p>${missing.map((m, k) => `<label class="f">${escapeHtml(m)}<input type="number" inputmode="numeric" min="0" max="4000" id="manual${k}" placeholder="kcal"></label>`).join('')}<button class="btn" type="button" id="manualSave">Kaydet</button>`;
+    askBox.hidden = false;
+    document.getElementById('manual0').focus();
+    return;
+  }
+  addEntry(found);
+  foodInput.value = '';
+});
+askBox.addEventListener('click', (e) => {
+  if (e.target.id !== 'manualSave' || !pendingManual) return;
+  const manual = pendingManual.missing.map((label, k) => ({ label, kcal: Math.max(0, Math.round(Number(document.getElementById(`manual${k}`).value) || 0)), src: 'el' }));
+  addEntry([...pendingManual.known, ...manual]);
+  pendingManual = null;
+  askBox.hidden = true;
+  foodInput.value = '';
+});
+function escapeHtml(s) { return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+const SRC = { tablo: 'ortalama değer', claude: 'Claude tahmini', el: 'senin yazdığın' };
+function paintFoods() {
+  const total = kcalTotal(), target = state.kcalTarget, ratio = total / target;
+  document.getElementById('kcalNum').innerHTML = `${fmt(total)} <small>/ ${fmt(target)} kcal</small>`;
+  document.getElementById('kcalLeft').textContent = total < target ? `${fmt(target - total)} kcal kaldı` : 'Hedefe ulaştın';
+  const bar = document.getElementById('kcalBar');
+  bar.querySelector('i').style.width = `${Math.min(100, ratio * 100)}%`;
+  bar.classList.toggle('full', ratio >= 1);
+  document.getElementById('kcalMsg').textContent = total === 0
+    ? 'Henüz bir şey eklemedin. İlk öğününü yazınca bar dolmaya başlar.'
+    : ratio < 1 ? 'Güzel gidiyor. Acıktığında kendini dinle.'
+      : 'Bugünkü hedefine ulaştın. Acıkırsan hafif bir şeyler iyi gelir; yarın yeni bir gün.';
+  const list = document.getElementById('mealList');
+  if (!state.foods.length) { list.innerHTML = '<p class="empty">Bugünün öğünleri burada görünecek.</p>'; return; }
+  list.innerHTML = MEALS.map(([id, name]) => {
+    const rows = state.foods.filter((f) => f.meal === id);
+    if (!rows.length) return '';
+    const sum = rows.reduce((s, f) => s + f.kcal, 0);
+    return `<div class="meal-group"><h3><span>${name}</span><span>${fmt(sum)} kcal</span></h3>${rows.map((f) => f.items.map((it, k) => `
+      <div class="food"><div class="t"><b>${escapeHtml(it.label)}</b><span>${SRC[it.src]}</span></div><span class="kc">${fmt(it.kcal)} kcal</span>${k === 0 ? `<button class="x" type="button" data-del="${f.id}" aria-label="${escapeHtml(f.items.map((i) => i.label).join(', '))} kaydını sil">×</button>` : '<span class="x" aria-hidden="true"></span>'}</div>`).join('')).join('')}</div>`;
+  }).join('');
+}
+document.getElementById('mealList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-del]');
+  if (!b) return;
+  state.foods = state.foods.filter((f) => String(f.id) !== b.dataset.del);
+  save();
+  paintAll();
+});
+
+// Daily target: Mifflin-St Jeor resting energy x activity, plus the chosen gentle deficit, never below 1,400 kcal.
+const P = { sex: 'pSex', age: 'pAge', height: 'pHeight', weight: 'pWeight', act: 'pAct', goal: 'pGoal' };
+function suggested() {
+  const p = state.profile;
+  const bmr = 10 * Number(p.weight) + 6.25 * Number(p.height) - 5 * Number(p.age) + (p.sex === 'm' ? 5 : -161);
+  const v = Math.round((bmr * Number(p.act) + Number(p.goal)) / 50) * 50;
+  return Number.isFinite(v) && v > 0 ? Math.max(1400, v) : null;
+}
+for (const [key, id] of Object.entries(P)) {
+  const el = document.getElementById(id);
+  el.value = state.profile[key];
+  el.addEventListener('input', () => { state.profile[key] = el.value; save(); paintCalc(); });
+}
+function paintCalc() {
+  const s = suggested();
+  document.getElementById('pResult').textContent = s ? `${fmt(s)} kcal` : '—';
+  document.getElementById('useTarget').disabled = !s;
+  document.getElementById('targetLbl').textContent = `${fmt(state.kcalTarget)} kcal`;
+  const manual = document.getElementById('pManual');
+  if (document.activeElement !== manual) manual.value = state.kcalTarget;
+}
+document.getElementById('useTarget').addEventListener('click', () => {
+  const s = suggested();
+  if (s) { state.kcalTarget = s; save(); paintAll(); toast(`Günlük hedefin ${fmt(s)} kcal oldu.`); }
+});
+document.getElementById('pManual').addEventListener('change', (e) => {
+  const v = Math.round(Number(e.target.value));
+  if (v >= 1000 && v <= 5000) { state.kcalTarget = v; save(); paintAll(); }
+});
+
+// ---------- görevler view ----------
+const TASK_ICONS = {
+  water: '<path d="M12 3C8 9 6 12 6 15a6 6 0 0 0 12 0c0-3-2-6-6-12Z"/>',
+  walk: '<path d="M8 4c2 0 3 2 3 5s-1 5-3 5-3-2-3-5 1-5 3-5ZM16 10c2 0 3 2 3 4 0 3-1 5-3 5s-3-2-3-5c0-2 1-4 3-4Z"/>',
+  produce: '<path d="M5 19C5 10 11 5 19 5c0 8-5 14-14 14ZM5 19l8-8"/>',
+  meals: '<path d="M3 12h18a9 9 0 0 1-18 0ZM8 8c0-2 2-2 2-4M13 8c0-2 2-2 2-4"/>',
+  sleep: '<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10Z"/>',
+};
+const TASKS = [
+  { key: 'water', title: 'Su', unit: 'L', step: 0.25, reward: 'Her bardak yağmur getirir, ekinler büyür', show: (v) => `${v.toLocaleString('tr-TR')} L`, stepLabel: 'Bir bardak su (250 ml) ekle' },
+  { key: 'walk', title: 'Yürüyüş', unit: 'dk', step: 10, reward: 'Her 10 dakika bir kelebek', show: (v) => `${v} dk`, stepLabel: '10 dakika yürüyüş ekle' },
+  { key: 'produce', title: 'Sebze ve meyve', unit: 'porsiyon', step: 1, reward: 'Her porsiyon yeni bir ekin', show: (v) => `${v} porsiyon`, stepLabel: 'Bir porsiyon ekle' },
+  { key: 'meals', title: 'Düzenli öğün', unit: 'öğün', auto: true, reward: 'Her öğün bir çiçek ya da ağaç', show: (v) => `${v} öğün` },
+  { key: 'sleep', title: 'Uyku', unit: 'saat', toggle: true, reward: 'Ateş böcekleri gelir', show: (v) => `${v} saat` },
+];
+const valueOf = (key) => (key === 'meals' ? mealsDone() : state.tasks[key]);
+const isDone = (key) => valueOf(key) >= state.targets[key];
+function paintTasks() {
+  document.getElementById('taskList').innerHTML = TASKS.map((t) => {
+    const v = valueOf(t.key), target = state.targets[t.key], done = v >= target;
+    const control = t.auto
+      ? `<span class="auto">Öğün ekledikçe dolar</span>`
+      : t.toggle
+        ? `<button class="toggle" type="button" data-toggle="${t.key}" aria-pressed="${done}">${done ? 'Uyudum ✓' : `${target} saat uyudum`}</button>`
+        : `<button class="minus" type="button" data-step="${t.key}" data-dir="-1" aria-label="${t.title}: geri al">−</button><button type="button" data-step="${t.key}" data-dir="1" aria-label="${t.stepLabel}">+</button>`;
+    return `<div class="task${done ? ' done' : ''}">
+      <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${TASK_ICONS[t.key]}</svg></span>
+      <div class="t"><b>${t.title}</b><span class="amt">${t.toggle ? (done ? 'tamam' : `${target} saat`) : `${v.toLocaleString('tr-TR')} / ${t.show(target)}`}</span>
+        <span class="bar"><i style="width:${Math.min(100, (v / target) * 100)}%"></i></span>
+        <span class="reward">${t.reward}</span></div>
+      <div class="step">${control}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('targetForm').innerHTML = TASKS.map((t) => `<label class="f">${t.title} (${t.unit})<input type="number" inputmode="decimal" id="tg-${t.key}" data-target="${t.key}" min="${t.step || 1}" step="${t.step || 1}" value="${state.targets[t.key]}"></label>`).join('');
+}
+document.getElementById('taskList').addEventListener('click', (e) => {
+  const step = e.target.closest('[data-step]');
+  const tog = e.target.closest('[data-toggle]');
+  if (step) {
+    const t = TASKS.find((x) => x.key === step.dataset.step), dir = Number(step.dataset.dir);
+    const wasDone = isDone(t.key);
+    state.tasks[t.key] = Math.max(0, Math.round((state.tasks[t.key] + dir * t.step) * 100) / 100);
+    if (dir > 0) earn(t.key, !wasDone && isDone(t.key));
+  } else if (tog) {
+    const key = tog.dataset.toggle;
+    const was = isDone(key);
+    state.tasks[key] = was ? 0 : state.targets[key];
+    if (!was) earn(key, true);
+  } else return;
+  save();
+  paintAll();
+});
+document.getElementById('targetForm').addEventListener('change', (e) => {
+  const key = e.target.dataset.target, v = Number(e.target.value);
+  if (key && v > 0) { state.targets[key] = v; if (key === 'sleep' && state.tasks.sleep) state.tasks.sleep = v; save(); paintAll(); }
+});
+
+// ---------- garden summary, tabs, and queued garden moments ----------
+function paintSummary() {
+  const total = kcalTotal(), ratio = total / state.kcalTarget;
+  document.getElementById('sumKcal').innerHTML = `${fmt(total)} <small>/ ${fmt(state.kcalTarget)}</small>`;
+  const bar = document.getElementById('sumKcalBar');
+  bar.querySelector('i').style.width = `${Math.min(100, ratio * 100)}%`;
+  bar.classList.toggle('full', ratio >= 1);
+  const done = TASKS.filter((t) => isDone(t.key)).length;
+  document.getElementById('sumTasks').innerHTML = `${done} <small>/ ${TASKS.length} tamam</small>`;
+  document.getElementById('sumDots').innerHTML = TASKS.map((t) => `<i class="${isDone(t.key) ? 'on' : ''}"></i>`).join('');
+}
+function paintAll() { paintFoods(); paintCalc(); paintTasks(); paintSummary(); paintBadge(); }
+
+const queue = [];
+let currentTab = 'bahce';
+function earn(key, completed) {
+  queue.push({ key, completed });
+  if (currentTab === 'bahce') playQueue();
+}
+function paintBadge() {
+  const b = document.getElementById('gardenBadge');
+  b.hidden = !queue.length;
+  b.textContent = queue.length;
+}
+let playing = false;
+function playQueue() {
+  if (playing || !queue.length) { paintBadge(); return; }
+  playing = true;
+  const step = () => {
+    const ev = queue.shift();
+    paintBadge();
+    if (!ev) { playing = false; return; }
+    let text = actions[ev.key]();
+    if (ev.completed) { finishBonus(ev.key); text = DONE_TEXT[ev.key]; }
+    toast(text);
+    setTimeout(step, reduceMotion ? 300 : 1100);
+  };
+  setTimeout(step, 450);
+}
+function showTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+  for (const v of ['bahce', 'ogunler', 'gorevler']) document.getElementById(`view-${v}`).hidden = v !== name;
+  window.scrollTo(0, 0);
+  if (name === 'bahce') playQueue();
+}
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
+document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.go)));
 document.getElementById('hard').addEventListener('click', () => {
   toast('Zor günlerde bahçe solmaz, sadece dinlenir. Serin bozulmadı.');
 });
+
+// Rebuild what today already earned, without animation, so the garden matches the saved day.
+replaying = true;
+for (let k = 0; k < Math.round(state.tasks.water / 0.25); k++) actions.water();
+if (state.tasks.water >= state.targets.water) finishBonus('water');
+for (let k = 0; k < state.tasks.produce; k++) actions.produce();
+for (let k = 0; k < mealsDone(); k++) actions.meals();
+for (let k = 0; k < Math.floor(state.tasks.walk / 10); k++) actions.walk();
+if (state.tasks.sleep >= state.targets.sleep) actions.sleep();
+replaying = false;
+paintMealPick();
+paintAll();
 
 // ---------- loop ----------
 const clock = new THREE.Clock();

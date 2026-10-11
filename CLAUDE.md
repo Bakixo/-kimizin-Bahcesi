@@ -97,6 +97,7 @@ Yeni bir sapma kararı alırsan buraya bir satır ekle: ne, neden, yanlışsa ma
 - Giriş: e-postaya hem magic link hem 6 haneli kod (iOS PWA depolaması Safari'den ayrı olduğu için).
 - Tasarım: krem kâğıt zemin, adaçayı/zeytin yeşili, mürdüm/incir vurgu, Fraunces (başlık) + Nunito (metin), karanlık mod.
 - Mimari: sunucu odaklı (Server Components + Server Actions + RLS), fotoğraf analizi `after()` ile arka planda, takılı "bekliyor" kayıtlar sayfa açılışında yeniden denenir.
+- **2026-10-11 yön değişikliği (spec'ten önce gelir):** Uygulama alttaki sekme çubuğuyla üç bölüm: **Bahçe** (ana sayfa, 3D tarla), **Öğünler** (günlük kalori hedefi + dolan bar; "2 yumurta" gibi serbest metin yazılır, ortalama kalori tablodan, bilinmeyen yiyecek Claude'dan, o da yoksa kullanıcıdan alınır), **Görevler** (su L, yürüyüş dk, sebze porsiyon, düzenli öğün, uyku; ilerledikçe bahçe büyür). Kalori artık varsayılan olarak açık ve ana özellik; spec'teki "kalori varsayılan kapalı" kararının yerini alır. Dil yine yargısız: hedef aşılınca kırmızı/suçlayıcı uyarı yok. Hedef Mifflin-St Jeor ile hesaplanır, 1.400 kcal tabanı var. Prototip: `docs/prototypes/bahce-3d.html`. Spec ve plan bu yöne göre güncellenecek.
 - Kullanıcı küçük ayrıntılarda onay istenmesini sevmiyor: makul varsayılanla ilerle, kararı not et.
 - Görsel işler: paylaşmadan önce tarayıcıda render alıp ekran görüntüsüne bak.
 
