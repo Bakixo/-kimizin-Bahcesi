@@ -53,6 +53,14 @@ h1 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 32px; 
 .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(40, 24, 10, 0.22)); }
 .toast { position: absolute; z-index: 1; left: 50%; bottom: 16px; transform: translate(-50%, 0); width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; padding: 10px 16px; border-radius: 999px; background: var(--glass); color: var(--ink); font-weight: 700; font-size: 14px; text-align: center; box-shadow: var(--shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity .35s, transform .35s; }
 .toast.quiet { opacity: 0; transform: translate(-50%, 8px); }
+/* Real Ankara clock and weather, floating over the top corners of the plot. */
+.chip { position: absolute; z-index: 1; top: 12px; display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 10px; border-radius: 16px; background: var(--glass); color: var(--ink); box-shadow: var(--shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); line-height: 1.15; }
+.chip.when { left: 12px; flex-direction: column; align-items: flex-start; gap: 1px; padding-left: 12px; }
+.chip.wx { right: 12px; }
+.chip strong { font-family: var(--display); font-weight: 600; font-size: 19px; font-variant-numeric: tabular-nums; }
+.chip span { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
+.chip .wx-text { display: flex; flex-direction: column; }
+.chip svg { width: 26px; height: 26px; flex: none; fill: none; stroke: var(--leaf); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
 .habits { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .habit { position: relative; border: 0; border-radius: 20px; background: var(--panel); box-shadow: var(--shadow); color: var(--ink); font: inherit; padding: 10px 2px 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; transition: transform .15s; }
@@ -85,6 +93,8 @@ button:focus-visible { outline: 2px solid var(--plum); outline-offset: 3px; }
   </header>
 
   <div class="stage" id="stage">
+    <div class="chip when"><strong id="clockTime">--:--</strong><span id="clockDate"></span></div>
+    <div class="chip wx" id="wxChip"><svg id="wxIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="wx-text"><strong id="wxTemp">—</strong><span id="wxLabel">Ankara</span></div></div>
     <div class="toast quiet" id="toast" role="status" aria-live="polite"></div>
   </div>
 
@@ -179,19 +189,12 @@ renderer.toneMappingExposure = 1.12;
 stage.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
-{
-  const c = document.createElement('canvas');
-  c.width = 4; c.height = 256;
-  const g = c.getContext('2d');
-  const grd = g.createLinearGradient(0, 0, 0, 256);
-  grd.addColorStop(0, '#9fb3c2');
-  grd.addColorStop(0.6, '#c9c6c0');
-  grd.addColorStop(1, '#e9cdb0');
-  g.fillStyle = grd; g.fillRect(0, 0, 4, 256);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  scene.background = tex;
-}
+// Sky is a small canvas repainted when the sun moves or the weather changes; stars are drawn into it at night.
+const skyCanvas = document.createElement('canvas');
+skyCanvas.width = 128; skyCanvas.height = 256;
+const skyTex = new THREE.CanvasTexture(skyCanvas);
+skyTex.colorSpace = THREE.SRGBColorSpace;
+scene.background = skyTex;
 scene.fog = new THREE.Fog('#e6cdb3', 22, 40);
 
 const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 60);
@@ -212,7 +215,9 @@ let idleTimer;
 controls.addEventListener('start', () => { controls.autoRotate = false; clearTimeout(idleTimer); });
 controls.addEventListener('end', () => { if (!reduceMotion) idleTimer = setTimeout(() => { controls.autoRotate = true; }, 6000); });
 
-scene.add(new THREE.HemisphereLight('#c9dcec', '#8a5a36', 1.15));
+const hemi = new THREE.HemisphereLight('#c9dcec', '#8a5a36', 1.15);
+scene.add(hemi);
+// The key light is the sun by day and the moon by night; updateSky() moves and tints it.
 const sun = new THREE.DirectionalLight('#ffc184', 3.2);
 sun.position.set(7, 7.5, 2.5);
 sun.castShadow = true;
@@ -582,6 +587,231 @@ LAYOUT.forEach((row, i) => [...row].forEach((ch, j) => {
 addButterfly();
 addFireflies(5);
 
+// ---------- real sky: Ankara sun, moon and weather ----------
+// Preview overrides for testing: ?saat=22:30 and ?hava=acik|parcali|kapali|sis|cisenti|yagmur|kar|firtina
+const LAT = 39.93, LON = 32.86, TZ = 'Europe/Istanbul';
+const params = new URLSearchParams(location.search);
+let clockOffset = 0;
+if (/^\d{1,2}:\d{2}$/.test(params.get('saat') || '')) {
+  const [hh, mm] = params.get('saat').split(':').map(Number);
+  const [y, m, d] = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date()).split('-').map(Number);
+  clockOffset = Date.UTC(y, m - 1, d, hh - 3, mm) - Date.now(); // Istanbul is UTC+3 all year
+}
+const now = () => new Date(Date.now() + clockOffset);
+
+// Low-precision solar position (good to a fraction of a degree): elevation and compass azimuth in degrees.
+function sunPosition(date) {
+  const rad = Math.PI / 180, d = date.getTime() / 86400000 - 10957.5;
+  const g = (357.529 + 0.98560028 * d) * rad, q = 280.459 + 0.98564736 * d;
+  const L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * rad, e = (23.439 - 0.00000036 * d) * rad;
+  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+  const gmst = ((18.697374558 + 24.06570982441908 * d) % 24 + 24) % 24;
+  const H = (gmst * 15 + LON) * rad - ra, la = LAT * rad;
+  const el = Math.asin(Math.sin(la) * Math.sin(dec) + Math.cos(la) * Math.cos(dec) * Math.cos(H));
+  const az = Math.atan2(-Math.sin(H), Math.tan(dec) * Math.cos(la) - Math.sin(la) * Math.cos(H));
+  return { el: el / rad, az: (az / rad + 360) % 360 };
+}
+function moonLight(date) {
+  const phase = (((date.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000 / 29.530588) % 1 + 1) % 1;
+  return (1 - Math.cos(phase * 2 * Math.PI)) / 2;
+}
+
+// Sky keyframes by sun elevation. el 8 is the original golden-hour look.
+const SKY = [
+  { el: -18, top: '#0a1230', mid: '#18224a', hor: '#2b3360', fog: '#1d2546', hs: '#7a8fd0', hg: '#2e2638', hi: 0.8, key: '#aec4ff', ki: 0.9, rim: 0.35, exp: 1.0 },
+  { el: -6, top: '#1a2756', mid: '#55497c', hor: '#c98576', fog: '#6a5872', hs: '#8d90c4', hg: '#4a3040', hi: 0.75, key: '#ff9d70', ki: 0.7, rim: 0.45, exp: 1.04 },
+  { el: 0, top: '#5d7cad', mid: '#c79899', hor: '#f3a86a', fog: '#d9a07c', hs: '#b5c4de', hg: '#7a4a32', hi: 0.95, key: '#ff9450', ki: 1.8, rim: 0.6, exp: 1.08 },
+  { el: 8, top: '#9fb3c2', mid: '#c9c6c0', hor: '#e9cdb0', fog: '#e6cdb3', hs: '#c9dcec', hg: '#8a5a36', hi: 1.15, key: '#ffc184', ki: 3.2, rim: 0.7, exp: 1.12 },
+  { el: 25, top: '#7cb0e0', mid: '#b4d2ea', hor: '#e4eef1', fog: '#dfe9ec', hs: '#d6e6f5', hg: '#86613f', hi: 1.2, key: '#fff0d6', ki: 3.0, rim: 0.7, exp: 1.08 },
+  { el: 90, top: '#5c9cdb', mid: '#a5cceb', hor: '#e0eef4', fog: '#dde9ee', hs: '#dceaf7', hg: '#8a6a48', hi: 1.25, key: '#fff6e6', ki: 3.1, rim: 0.7, exp: 1.05 },
+];
+const ca = new THREE.Color(), cb = new THREE.Color();
+function mix(a, b, t) { return a + (b - a) * t; }
+function mixHex(a, b, t) { return ca.set(a).lerp(cb.set(b), t).getHexString(); }
+function skyAt(el) {
+  let k = 0;
+  while (k < SKY.length - 2 && el > SKY[k + 1].el) k++;
+  const A = SKY[k], B = SKY[k + 1], t = Math.min(1, Math.max(0, (el - A.el) / (B.el - A.el)));
+  const out = {};
+  for (const key of Object.keys(A)) out[key] = typeof A[key] === 'number' ? mix(A[key], B[key], t) : '#' + mixHex(A[key], B[key], t);
+  return out;
+}
+
+// WMO weather codes from Open-Meteo, grouped into the looks the garden can show.
+const WEATHER = {
+  clear: { label: 'Açık', clouds: 0, gloom: 0 },
+  partly: { label: 'Parçalı bulutlu', clouds: 4, gloom: 0.15 },
+  overcast: { label: 'Kapalı', clouds: 7, gloom: 0.6 },
+  fog: { label: 'Sisli', clouds: 3, gloom: 0.55 },
+  drizzle: { label: 'Çisenti', clouds: 6, gloom: 0.6, rain: 120 },
+  rain: { label: 'Yağmurlu', clouds: 7, gloom: 0.7, rain: 320 },
+  snow: { label: 'Karlı', clouds: 6, gloom: 0.55, snow: 320 },
+  storm: { label: 'Gök gürültülü', clouds: 7, gloom: 0.8, rain: 420 },
+};
+function kindFromCode(c) {
+  if (c <= 1) return 'clear';
+  if (c === 2) return 'partly';
+  if (c === 3) return 'overcast';
+  if (c === 45 || c === 48) return 'fog';
+  if (c >= 51 && c <= 57) return 'drizzle';
+  if ((c >= 61 && c <= 67) || (c >= 80 && c <= 82)) return 'rain';
+  if ((c >= 71 && c <= 77) || c === 85 || c === 86) return 'snow';
+  if (c >= 95) return 'storm';
+  return 'partly';
+}
+const PREVIEW = { acik: 0, parcali: 2, kapali: 3, sis: 45, cisenti: 53, yagmur: 63, kar: 73, firtina: 95 };
+let weather = { kind: 'clear', temp: null, cover: 0, wind: 8, state: 'loading' };
+
+// Clouds: seven baked low-poly puffs. They drift in a band behind the plot as seen from the camera, so they always read as sky, never as objects on the field.
+const cloudMat = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.3, flatShading: true, roughness: 1, transparent: true, opacity: 0.94 });
+const clouds = [];
+for (let k = 0; k < 7; k++) {
+  const geos = [];
+  const puffs = 4 + Math.floor(rand() * 3);
+  for (let p = 0; p < puffs; p++) {
+    const r = 0.32 + rand() * 0.28;
+    const g = new THREE.IcosahedronGeometry(r, 0);
+    g.deleteAttribute('uv');
+    g.scale(1, 0.62, 1);
+    g.translate((p - puffs / 2) * 0.38 + (rand() - 0.5) * 0.15, (rand() - 0.3) * 0.18, (rand() - 0.5) * 0.4);
+    geos.push(g);
+  }
+  const m = new THREE.Mesh(mergeGeometries(geos), cloudMat);
+  m.geometry.computeVertexNormals();
+  m.castShadow = true;
+  m.userData = { a: (k / 6 - 0.5) * 2.6 + (rand() - 0.5) * 0.3, r: 4.0 + rand() * 0.8, h: 0.4 + rand() * 0.9, s: 0.03 + rand() * 0.02, sc: 0.9 + rand() * 0.5 };
+  m.scale.setScalar(m.userData.sc);
+  m.visible = false;
+  scene.add(m);
+  clouds.push(m);
+}
+
+// Rain: one instanced mesh of thin streaks. Snow: one point cloud. Each is a single draw call.
+const RAIN_MAX = 420, SNOW_MAX = 320, SPAN = N + 0.6;
+const rainMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.014, 0.26, 0.014), new THREE.MeshBasicMaterial({ color: '#bcd6ea', transparent: true, opacity: 0.6, depthWrite: false }), RAIN_MAX);
+rainMesh.frustumCulled = false;
+rainMesh.count = 0;
+scene.add(rainMesh);
+const rainPos = Array.from({ length: RAIN_MAX }, () => ({ x: (rand() - 0.5) * SPAN, y: rand() * 6, z: (rand() - 0.5) * SPAN, v: 7 + rand() * 3 }));
+const snowGeo = new THREE.BufferGeometry();
+const snowArr = new Float32Array(SNOW_MAX * 3);
+for (let k = 0; k < SNOW_MAX; k++) snowArr.set([(rand() - 0.5) * SPAN, rand() * 6, (rand() - 0.5) * SPAN], k * 3);
+snowGeo.setAttribute('position', new THREE.BufferAttribute(snowArr, 3));
+const snow = new THREE.Points(snowGeo, new THREE.PointsMaterial({ map: glowTex, color: '#ffffff', size: 7, sizeAttenuation: false, transparent: true, depthWrite: false }));
+snow.frustumCulled = false;
+snow.visible = false;
+scene.add(snow);
+const rainMatrix = new THREE.Matrix4();
+let windAmp = 1, lightning = 0, nextFlash = 0, skyExposure = 1.12;
+
+const STARS = Array.from({ length: 90 }, () => [rand(), rand() * 0.62, 0.5 + rand() * 1.1, 0.4 + rand() * 0.6]);
+function paintSky(s, starAlpha) {
+  const g = skyCanvas.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, 256);
+  grd.addColorStop(0, s.top); grd.addColorStop(0.6, s.mid); grd.addColorStop(1, s.hor);
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 256);
+  if (starAlpha > 0.02) {
+    for (const [x, y, r, a] of STARS) {
+      g.fillStyle = `rgba(255,250,235,${(a * starAlpha).toFixed(3)})`;
+      g.fillRect(x * 128, y * 256, r * 0.6, r);
+    }
+  }
+  skyTex.needsUpdate = true;
+}
+
+const sunDir = new THREE.Vector3();
+function compassDir(az, el, out) {
+  const a = az * Math.PI / 180, e = el * Math.PI / 180; // north is -z, east is +x
+  return out.set(Math.cos(e) * Math.sin(a), Math.sin(e), -Math.cos(e) * Math.cos(a));
+}
+let isNight = false;
+function updateSky() {
+  const date = now();
+  const { el, az } = sunPosition(date);
+  const w = WEATHER[weather.kind];
+  const gloom = Math.max(w.gloom, Math.min(0.6, (weather.cover || 0) / 100 * 0.6));
+  const s = skyAt(el);
+  const grey = el > -4 ? '#a7aeb5' : '#181b25';
+  for (const key of ['top', 'mid', 'hor', 'fog']) s[key] = '#' + mixHex(s[key], grey, gloom * 0.75);
+  isNight = el < -6;
+  const night = Math.min(1, Math.max(0, (-el - 4) / 10));
+  paintSky(s, night * (1 - gloom));
+
+  hemi.color.set(s.hs); hemi.groundColor.set(s.hg); hemi.intensity = s.hi * (1 - 0.12 * gloom);
+  rim.intensity = s.rim * (1 - 0.4 * gloom);
+  skyExposure = s.exp;
+  renderer.toneMappingExposure = s.exp;
+  if (isNight) {
+    compassDir((az + 180) % 360, 42, sunDir); // the moon, kept roughly opposite the sun
+    sun.color.set(s.key);
+    sun.intensity = s.ki * (0.45 + 0.55 * moonLight(date)) * (1 - 0.7 * gloom);
+  } else {
+    compassDir(az, Math.max(el, 9), sunDir); // keep a usable shadow angle near sunrise and sunset
+    sun.color.set(s.key);
+    sun.intensity = s.ki * (1 - 0.72 * gloom);
+  }
+  sun.position.copy(sunDir).multiplyScalar(12);
+
+  scene.fog.color.set(s.fog);
+  scene.fog.near = weather.kind === 'fog' ? 9 : 22;
+  scene.fog.far = weather.kind === 'fog' ? 24 : 40;
+  cloudMat.emissive.set(isNight ? '#1c2032' : '#ffffff');
+  cloudMat.color.set('#' + mixHex(isNight ? '#5d6584' : el < 4 ? '#f6d2bd' : '#ffffff', isNight ? '#2f3445' : '#9aa1a8', gloom));
+  const count = weather.cover != null && weather.state === 'live' ? Math.max(w.clouds, Math.round(weather.cover / 100 * 7)) : w.clouds;
+  clouds.forEach((c, k) => { c.visible = k < count; });
+  rainMesh.count = reduceMotion ? 0 : (w.rain || 0);
+  snow.visible = !reduceMotion && !!w.snow;
+  windAmp = Math.min(2.2, Math.max(0.7, (weather.wind || 8) / 12));
+  renderer.shadowMap.needsUpdate = true;
+  paintClock(date);
+}
+
+const fmtDate = new Intl.DateTimeFormat('tr-TR', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+const fmtTime = new Intl.DateTimeFormat('tr-TR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+const ICONS = {
+  sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+  moon: '<path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.2 6.2 0 0 0 10 10Z"/>',
+  cloud: '<path d="M7 18h10.5a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 7.3 9.2 4.4 4.4 0 0 0 7 18Z"/>',
+  partly: '<path d="M8.5 3.5v1.6M3.5 8.5h1.6M5 5l1.1 1.1M12 5l-1.1 1.1"/><path d="M5.6 11.6a3.6 3.6 0 1 1 6.3-3.4"/><path d="M9 20h8.5a3.4 3.4 0 0 0 .3-6.8 4.7 4.7 0 0 0-9-.6A3.7 3.7 0 0 0 9 20Z"/>',
+  rain: '<path d="M7 14h10.5a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 7.3 5.2 4.4 4.4 0 0 0 7 14Z"/><path d="M8.5 17l-1 2.5M12.5 17l-1 2.5M16.5 17l-1 2.5"/>',
+  snow: '<path d="M7 14h10.5a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 7.3 5.2 4.4 4.4 0 0 0 7 14Z"/><path d="M8 18h.01M12 20h.01M16 18h.01M10 21.5h.01M14 21.5h.01" stroke-width="2.6"/>',
+  fog: '<path d="M4 9h16M6 13h12M4 17h16"/>',
+  storm: '<path d="M7 14h10.5a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 7.3 5.2 4.4 4.4 0 0 0 7 14Z"/><path d="M12.5 15l-2.2 3.5h3l-2 3.5"/>',
+};
+function paintClock(date) {
+  document.getElementById('clockTime').textContent = fmtTime.format(date);
+  const day = fmtDate.format(date); // e.g. "11 Ekim 2026 Pazar"
+  document.getElementById('clockDate').textContent = day;
+  const k = weather.kind;
+  const icon = k === 'clear' ? (isNight ? 'moon' : 'sun') : k === 'partly' ? (isNight ? 'cloud' : 'partly') : k === 'overcast' ? 'cloud' : k === 'drizzle' ? 'rain' : k;
+  document.getElementById('wxIcon').innerHTML = ICONS[icon];
+  document.getElementById('wxTemp').textContent = weather.temp == null ? '—' : `${Math.round(weather.temp)}°`;
+  document.getElementById('wxLabel').textContent = weather.state === 'failed' ? 'Ankara · hava alınamadı' : weather.state === 'loading' ? 'Ankara' : `Ankara · ${WEATHER[k].label}`;
+}
+
+async function loadWeather() {
+  const forced = params.get('hava');
+  if (forced in PREVIEW) {
+    weather = { kind: kindFromCode(PREVIEW[forced]), temp: forced === 'kar' ? -2 : 14, cover: null, wind: forced === 'firtina' ? 30 : 10, state: 'preview' };
+    updateSky();
+    return;
+  }
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m&timezone=Europe%2FIstanbul`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const c = (await res.json()).current;
+    weather = { kind: kindFromCode(c.weather_code), temp: c.temperature_2m, cover: c.cloud_cover, wind: c.wind_speed_10m, state: 'live' };
+  } catch {
+    if (weather.state !== 'live') weather = { kind: 'clear', temp: null, cover: 0, wind: 8, state: 'failed' };
+  }
+  updateSky();
+}
+updateSky();
+loadWeather();
+setInterval(updateSky, 30000);
+setInterval(loadWeather, 15 * 60000);
+
 // ---------- habit actions ----------
 const produceCycle = ['carrot', 'pumpkin', 'wheat'];
 const mealCycle = ['bush', 'tree', 'sunflower'];
@@ -651,7 +881,7 @@ function frame(now) {
     if (u.life >= u.max) { scene.remove(s); s.material.dispose(); sparkles.splice(k, 1); }
   }
   if (!reduceMotion) {
-    sway.forEach((o) => { o.rotation.z = Math.sin(t * 1.4 + o.userData.phase) * o.userData.amp; o.rotation.x = Math.cos(t * 1.1 + o.userData.phase) * o.userData.amp * 0.6; });
+    sway.forEach((o) => { const amp = o.userData.amp * windAmp; o.rotation.z = Math.sin(t * 1.4 * windAmp + o.userData.phase) * amp; o.rotation.x = Math.cos(t * 1.1 + o.userData.phase) * amp * 0.6; });
   }
   butterflies.forEach((b) => {
     const u = b.userData, a = t * u.speed + u.phase;
@@ -665,6 +895,44 @@ function frame(now) {
     f.position.set(u.x + Math.sin(t * 0.6 + u.p) * 0.35, u.y + Math.sin(t * 1.3 + u.p) * 0.18, u.z + Math.cos(t * 0.5 + u.p) * 0.35);
     f.material.opacity = 0.55 + 0.45 * Math.sin(t * 2.2 + u.p * 3);
   });
+
+  const camAz = Math.atan2(camera.position.x, camera.position.z);
+  clouds.forEach((c) => {
+    if (!c.visible) return;
+    const u = c.userData;
+    if (!reduceMotion) { u.a += u.s * windAmp * dt; if (u.a > 1.4) u.a -= 2.8; }
+    const a = camAz + Math.PI + u.a;
+    c.position.set(Math.sin(a) * u.r, u.h, Math.cos(a) * u.r);
+    c.rotation.y = a;
+  });
+  if (rainMesh.count) {
+    const slant = (windAmp - 0.7) * 0.25;
+    for (let k = 0; k < rainMesh.count; k++) {
+      const p = rainPos[k];
+      p.y -= p.v * dt;
+      p.x += slant * p.v * dt * 0.3;
+      if (p.y < 0.05) { p.y = 4.5 + rand() * 1.5; p.x = (rand() - 0.5) * SPAN; p.z = (rand() - 0.5) * SPAN; }
+      rainMatrix.makeTranslation(p.x, p.y, p.z);
+      rainMesh.setMatrixAt(k, rainMatrix);
+    }
+    rainMesh.instanceMatrix.needsUpdate = true;
+  }
+  if (snow.visible) {
+    const arr = snowGeo.attributes.position.array;
+    for (let k = 0; k < SNOW_MAX; k++) {
+      arr[k * 3 + 1] -= (0.35 + (k % 5) * 0.06) * dt;
+      arr[k * 3] += Math.sin(t * 0.8 + k) * 0.12 * dt * windAmp;
+      if (arr[k * 3 + 1] < 0.05) { arr[k * 3 + 1] = 5 + rand(); arr[k * 3] = (rand() - 0.5) * SPAN; arr[k * 3 + 2] = (rand() - 0.5) * SPAN; }
+    }
+    snowGeo.attributes.position.needsUpdate = true;
+  }
+  if (weather.kind === 'storm' && !reduceMotion) {
+    if (t > nextFlash) { lightning = 1; nextFlash = t + 4 + rand() * 7; }
+    if (lightning > 0) {
+      lightning = Math.max(0, lightning - dt * 5);
+      renderer.toneMappingExposure = skyExposure + lightning * 1.4;
+    }
+  }
 
   controls.update();
   if (frameNo === 1 || tweens.length || frameNo % 6 === 0) renderer.shadowMap.needsUpdate = true;
