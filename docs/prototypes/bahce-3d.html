@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
-/* Layout: one phone-width column with a bottom tab bar. Garden is home; meals fill a calorie bar; tasks grow the garden. */
+/* Layout: one phone-width column with a bottom tab bar. The couple's two-sided garden is home; meals, tasks and profile sit in their own tabs. */
 :root {
   --bg: #f4eee4;
   --panel: #fffdf8;
@@ -136,6 +136,53 @@ details.card[open] > summary::after { content: "–"; }
 .tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .tab[aria-selected="true"] { background: var(--fig-soft); color: var(--plum); }
 .badge { position: absolute; top: 3px; left: calc(50% + 7px); display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--plum); color: var(--panel); font-size: 10px; }
+.tabbar nav { grid-template-columns: repeat(4, 1fr); }
+.visiting .own, .visit-only { display: none !important; }
+.visiting .visit-only { display: flex !important; }
+.visit-bar { flex-wrap: wrap; gap: 8px; }
+.visit-bar .btn { flex: 1; }
+.visit-bar .note { flex-basis: 100%; }
+.couple { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.who { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; border-radius: 18px; background: var(--panel); box-shadow: var(--shadow); }
+.who > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.who b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who small, .feed-row small, .neighbor small, .sw small { display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); }
+.avatar { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--tint); color: #fff; font-family: var(--display); font-weight: 600; font-size: 16px; box-shadow: 0 0 0 3px var(--panel), 0 0 0 4px var(--tint); }
+.avatar.big { width: 56px; height: 56px; font-size: 26px; }
+.joint { display: flex; flex-direction: column; gap: 8px; }
+.joint-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.joint-head b { font-size: 15px; }
+.joint-head span { font-weight: 800; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+#feedList { display: flex; flex-direction: column; margin: 6px 0 10px; }
+.feed-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+.feed-row:first-child { border-top: 0; }
+.feed-row .dot { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 10px; background: color-mix(in srgb, var(--tint) 18%, var(--panel)); }
+.feed-row .dot svg { width: 18px; height: 18px; fill: none; stroke: var(--tint); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.feed-row .t { flex: 1; min-width: 0; font-size: 14px; }
+.heart { width: 40px; height: 40px; flex: none; border: 0; border-radius: 50%; background: transparent; color: var(--plum); font-size: 20px; cursor: pointer; }
+.heart[aria-pressed="true"] { background: var(--fig-soft); }
+.nudge-title { margin: 0 0 8px; font-size: 12.5px; font-weight: 800; color: var(--ink-soft); }
+.person { display: flex; gap: 14px; align-items: flex-start; }
+.form.tight { flex: 1; min-width: 0; margin-top: 0; }
+.swatches { display: flex; gap: 10px; margin-top: 4px; }
+.swatch { width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--tint); cursor: pointer; }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--tint); }
+.invite { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0; padding: 10px 12px; border-radius: 14px; background: var(--bg); }
+.invite code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 20px; font-weight: 700; letter-spacing: .08em; color: var(--leaf); }
+.btn.small { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14.5px; font-weight: 700; cursor: pointer; }
+.k + .sw { border-top: 0; }
+.app .sw input { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 50px; height: 30px; min-height: 30px; padding: 0; border: 0; border-radius: 999px; background: var(--ring-track); cursor: pointer; transition: background .2s; }
+.app .sw input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--panel); box-shadow: 0 1px 3px rgba(0, 0, 0, .2); transition: transform .2s; }
+.app .sw input:checked { background: var(--olive); }
+.app .sw input:checked::after { transform: translateX(20px); }
+.neighbor { display: flex; align-items: center; gap: 10px; padding: 8px 0 12px; }
+.neighbor .t { flex: 1; min-width: 0; font-size: 14.5px; }
+.card > .k { display: block; }
+.card .meal-pick { margin-top: 8px; }
+.kcal-off { display: none; }
+.no-kcal .kcal-off { display: block; }
+.no-kcal .kcal-card, .no-kcal .food .kc, .no-kcal .meal-group h3 span + span { display: none; }
 button:focus-visible, .app input:focus-visible, .app select:focus-visible, summary:focus-visible { outline: 2px solid var(--plum); outline-offset: 3px; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #4a3d30; background: #e9e0d2; }
 </style>
@@ -144,10 +191,10 @@ button:focus-visible, .app input:focus-visible, .app select:focus-visible, summa
   <section class="view" id="view-bahce" aria-label="Bahçe">
     <header>
       <div>
-        <p class="eyebrow">İkimizin Bahçesi</p>
-        <h1>Bahçemiz</h1>
+        <p class="eyebrow" id="gardenEyebrow">İkimizin Bahçesi</p>
+        <h1 id="gardenTitle">Bahçemiz</h1>
       </div>
-      <div class="day"><strong>12</strong><span>gündür büyüyor</span></div>
+      <div class="day own"><strong>12</strong><span>gündür birlikte</span></div>
     </header>
 
     <div class="stage" id="stage">
@@ -155,9 +202,35 @@ button:focus-visible, .app input:focus-visible, .app select:focus-visible, summa
       <div class="toast quiet" id="toast" role="status" aria-live="polite"></div>
     </div>
 
-    <div class="summary">
+    <div class="visit-bar visit-only">
+      <button class="btn" id="sendSeed" type="button">Tohum bırak</button>
+      <button class="btn soft" id="goHome" type="button">Bahçeme dön</button>
+      <p class="note">Bıraktığın tohum komşunun bahçesinde senin renginde açar. Sıralama ya da yarış yok; sadece ziyaret.</p>
+    </div>
+
+    <div class="couple own" id="coupleBar"></div>
+
+    <div class="card own joint">
+      <span class="k">Ortak hedef</span>
+      <div class="joint-head"><b>Bu hafta ikiniz toplam 25 L su</b><span id="jointVal"></span></div>
+      <span class="bar" id="jointBar"><i></i></span>
+      <p class="note">Ortadaki Biz ağacı yalnızca ortak hedeflerle büyür. <span id="streakNote"></span></p>
+    </div>
+
+    <div class="card own">
+      <span class="k">Bugün bahçede</span>
+      <div id="feedList"></div>
+      <p class="nudge-title" id="nudgeTitle"></p>
+      <div class="meal-pick" id="nudges">
+        <button class="pill" type="button" data-nudge="Su içtin mi?">Su içtin mi?</button>
+        <button class="pill" type="button" data-nudge="Hadi biraz yürüyelim">Hadi yürüyelim</button>
+        <button class="pill" type="button" data-nudge="Seninle gurur duyuyorum">Gurur duyuyorum</button>
+      </div>
+    </div>
+
+    <div class="summary own">
       <button class="card" type="button" data-go="ogunler">
-        <span class="k">Bugünkü kalori</span>
+        <span class="k" id="sumKcalLabel">Bugünkü kalori</span>
         <span class="v" id="sumKcal">0</span>
         <span class="bar" id="sumKcalBar"><i></i></span>
       </button>
@@ -168,9 +241,9 @@ button:focus-visible, .app input:focus-visible, .app select:focus-visible, summa
       </button>
     </div>
 
-    <div class="foot">
+    <div class="foot own">
       <button class="hard" id="hard" type="button">Bugün zor bir gün</button>
-      <p class="legend">Görevleri tamamladıkça bahçen büyür: su ekinleri büyütür, sebze yeni ekin açar, öğünler çiçek ve ağaç getirir.</p>
+      <p class="legend">Sol yarı senin, sağ yarı onun. Görevlerin kendi yarını büyütür: su ekinleri büyütür, sebze yeni ekin açar, öğünler çiçek ve ağaç getirir.</p>
     </div>
   </section>
 
@@ -179,6 +252,8 @@ button:focus-visible, .app input:focus-visible, .app select:focus-visible, summa
       <h2>Bugün ne yedin?</h2>
       <p class="sub">Yazman yeterli. "2 yumurta, 1 dilim ekmek" gibi; ortalama kaloriyi uygulama bulur.</p>
     </div>
+
+    <p class="note kcal-off">Kalori takibi kapalı. Öğünlerini yine de ekleyebilirsin; düzenli öğün görevi dolar. Profil sekmesinden açabilirsin.</p>
 
     <div class="card kcal-card">
       <div class="kcal-head"><span class="kcal-num" id="kcalNum">0</span><span class="note" id="kcalLeft"></span></div>
@@ -197,6 +272,51 @@ button:focus-visible, .app input:focus-visible, .app select:focus-visible, summa
     </form>
 
     <div class="card" id="mealList"></div>
+
+  </section>
+
+  <section class="view" id="view-gorevler" aria-label="Görevler" hidden>
+    <div>
+      <h2>Bugünün görevleri</h2>
+      <p class="sub">Her adım bahçene bir şey katar. Sonra bahçeye dönüp neler değiştiğine bak.</p>
+    </div>
+    <div class="card tasks" id="taskList"></div>
+  </section>
+
+  <section class="view" id="view-profil" aria-label="Profil" hidden>
+    <div>
+      <h2>Profil</h2>
+      <p class="sub">Senin ayarların, partnerin ve komşu bahçeler.</p>
+    </div>
+
+    <div class="card person">
+      <span class="avatar big" id="meAvatar"></span>
+      <div class="form tight">
+        <label class="f">Adın<input id="meName" type="text" maxlength="20"></label>
+        <span class="f">Bahçedeki rengin<span class="swatches" id="meTints"></span></span>
+        <p class="note">Bahçenin sol yarısı senin. Çiçeklerin ve meyvelerin bu renkte açar.</p>
+      </div>
+    </div>
+
+    <div class="card person">
+      <span class="avatar big" id="partnerAvatar"></span>
+      <div class="form tight">
+        <label class="f">Partnerin<input id="partnerName" type="text" maxlength="20"></label>
+        <span class="f">Onun rengi<span class="swatches" id="partnerTints"></span></span>
+        <p class="note">12 gündür birlikte bahçe büyütüyorsunuz. Gerçek uygulamada partner kendi adını ve rengini kendisi seçer.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="k">Partnerini davet et</span>
+      <div class="invite"><code id="inviteCode">BHC-7K2Q</code><button class="btn soft small" id="copyCode" type="button">Kopyala</button></div>
+      <p class="note">Partnerin uygulamaya kaydolup bu kodu girince bahçeniz birleşir. Bir kişi aynı anda tek bir bahçede olabilir.</p>
+    </div>
+
+    <div class="card">
+      <span class="k">Programım</span>
+      <label class="sw"><span>Kalori takibi<small>Kapalıyken öğünler kaydedilir ama kalori gösterilmez. Diyette değilsen kapatabilirsin; görevlerle bahçeye katkın sürer.</small></span><input type="checkbox" role="switch" id="sKcal"></label>
+    </div>
 
     <details class="card" id="calcBox">
       <summary><span>Günlük hedef: <span id="targetLbl"></span></span></summary>
@@ -224,18 +344,54 @@ button:focus-visible, .app input:focus-visible, .app select:focus-visible, summa
         <p class="note">Hesap Mifflin-St Jeor formülüyle yapılır ve 1.400 kcal'nin altına inmez. Kesin bir ihtiyaç için bir diyetisyene danışmak en iyisi.</p>
       </div>
     </details>
-  </section>
-
-  <section class="view" id="view-gorevler" aria-label="Görevler" hidden>
-    <div>
-      <h2>Bugünün görevleri</h2>
-      <p class="sub">Her adım bahçene bir şey katar. Sonra bahçeye dönüp neler değiştiğine bak.</p>
-    </div>
-    <div class="card tasks" id="taskList"></div>
     <details class="card">
-      <summary><span>Hedefleri düzenle</span></summary>
+      <summary><span>Görev hedeflerim</span></summary>
       <div class="form grid2" id="targetForm"></div>
     </details>
+    <div class="card">
+      <span class="k">Partnerim neleri görsün?</span>
+      <label class="sw"><span>Kalori sayılarım<small>Kapalıyken sadece "öğün ekledi" görür.</small></span><input type="checkbox" role="switch" id="sShareKcal"></label>
+      <label class="sw"><span>Öğünlerim ve fotoğraflarım</span><input type="checkbox" role="switch" id="sShareMeals"></label>
+      <label class="sw"><span>Tamamladığım görevler</span><input type="checkbox" role="switch" id="sShareTasks"></label>
+      <p class="note">Ağırlığın kimseye gösterilmez; sadece kalori hedefini hesaplamak için kullanılır.</p>
+    </div>
+
+    <div class="card">
+      <span class="k">Bildirimler</span>
+      <label class="sw"><span>Dürtmelere izin ver<small>Partnerin sana nazik hatırlatmalar gönderebilir.</small></span><input type="checkbox" role="switch" id="sNudges"></label>
+      <div class="grid2">
+        <label class="f">Sessiz saat başlangıcı<input id="quietFrom" type="time"></label>
+        <label class="f">Bitişi<input id="quietTo" type="time"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="k">Komşu bahçeler</span>
+      <div id="neighborList"></div>
+      <form class="field" id="addNeighbor" autocomplete="off">
+        <input id="neighborCode" type="text" placeholder="Komşu kodu, örn. BHC-4K7Q" aria-label="Komşu kodu">
+        <button class="btn soft" type="submit">Ekle</button>
+      </form>
+      <p class="note">Arkadaş çiftlerle birbirinizin bahçesini ziyaret edip tohum bırakabilirsiniz. Kalori, öğün ve görev ayrıntıları komşulara hiç gösterilmez.</p>
+    </div>
+
+    <div class="card">
+      <span class="k">Görünüm</span>
+      <div class="meal-pick">
+        <button class="pill" type="button" data-theme-pick="system">Sistem</button>
+        <button class="pill" type="button" data-theme-pick="light">Açık</button>
+        <button class="pill" type="button" data-theme-pick="dark">Koyu</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="k">Hesap</span>
+      <div class="meal-pick">
+        <button class="btn soft small" type="button" data-danger="leave">Bahçeden ayrıl</button>
+        <button class="btn soft small" type="button" data-danger="delete">Hesabımı sil</button>
+      </div>
+      <div class="ask" id="dangerConfirm" hidden><p></p><button class="btn soft small" id="dangerCancel" type="button">Vazgeç</button></div>
+    </div>
   </section>
 </div>
 
@@ -249,6 +405,9 @@ button:focus-visible, .app input:focus-visible, .app select:focus-visible, summa
     </button>
     <button class="tab" role="tab" type="button" data-tab="gorevler" aria-selected="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Görevler
+    </button>
+    <button class="tab" role="tab" type="button" data-tab="profil" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a3.2 3.2 0 1 0 0-6.4A3.2 3.2 0 0 0 9 11ZM3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16 6.3a3 3 0 0 1 0 5.4M17.5 14.3c1.7.6 2.7 2.2 3 4.7"/></svg>Profil
     </button>
   </nav>
 </div>
@@ -306,7 +465,7 @@ scene.fog = new THREE.Fog('#e6cdb3', 22, 40);
 
 const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 60);
 camera.position.set(10, 9.2, 10);
-camera.zoom = 1.1;
+camera.zoom = 1.16;
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = false;
 controls.enableDamping = true;
@@ -342,7 +501,7 @@ function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h, false);
   const aspect = w / h;
-  const halfW = Math.max(4.7, 3.7 * aspect);
+  const halfW = Math.max(5.0, 3.9 * aspect);
   const halfH = halfW / aspect;
   camera.left = -halfW; camera.right = halfW; camera.top = halfH; camera.bottom = -halfH;
   camera.updateProjectionMatrix();
@@ -448,45 +607,54 @@ function bake(group) {
   return m;
 }
 
-// ---------- the floating plot ----------
-const N = 6;
+// ---------- the floating plot: two halves joined by a stone path ----------
+// Columns 0-2 belong to one partner, 3 is the shared path with the "Biz ağacı", 4-6 to the other partner.
+const NX = 7, NZ = 6, MID = 3;
 const world = new THREE.Group();
 scene.add(world);
 {
   const island = new THREE.Group();
-  island.add(part(new RoundedBoxGeometry(N + 0.3, 0.42, N + 0.3, 2, 0.06), '#b4612a', { y: -0.31, ao: 0, vary: 0 }));
-  island.add(part(new RoundedBoxGeometry(N + 0.14, 0.16, N + 0.14, 2, 0.05), '#8d4a22', { y: -0.58, ao: 0, vary: 0 }));
+  island.add(part(new RoundedBoxGeometry(NX + 0.3, 0.42, NZ + 0.3, 2, 0.06), '#b4612a', { y: -0.31, ao: 0, vary: 0 }));
+  island.add(part(new RoundedBoxGeometry(NX + 0.14, 0.16, NZ + 0.14, 2, 0.05), '#8d4a22', { y: -0.58, ao: 0, vary: 0 }));
   // Small earth teeth along the underside, like a lifted chunk of field.
-  const h = (N + 0.1) / 2;
-  for (let k = -h + 0.25; k < h; k += 0.5) {
-    for (const [x, z] of [[k, h - 0.14], [h - 0.14, k], [k, -h + 0.14], [-h + 0.14, k]]) {
-      island.add(part(new THREE.ConeGeometry(0.12 + rand() * 0.05, 0.2 + rand() * 0.12, 4), rand() > 0.75 ? '#9a8f84' : '#86441f', { x, y: -0.74, z, rx: Math.PI, ry: rand() * 2, ao: 0, vary: 0.1 }));
-    }
-  }
+  const hx = (NX + 0.1) / 2, hz = (NZ + 0.1) / 2;
+  const tooth = (x, z) => island.add(part(new THREE.ConeGeometry(0.12 + rand() * 0.05, 0.2 + rand() * 0.12, 4), rand() > 0.75 ? '#9a8f84' : '#86441f', { x, y: -0.74, z, rx: Math.PI, ry: rand() * 2, ao: 0, vary: 0.1 }));
+  for (let k = -hx + 0.25; k < hx; k += 0.5) { tooth(k, hz - 0.14); tooth(k, -hz + 0.14); }
+  for (let k = -hz + 0.25; k < hz; k += 0.5) { tooth(hx - 0.14, k); tooth(-hx + 0.14, k); }
   world.add(bake(island));
 }
 
 const tiles = [];
 const tileField = new THREE.Group();
-for (let i = 0; i < N; i++) {
-  for (let j = 0; j < N; j++) {
-    const x = j - (N - 1) / 2, z = i - (N - 1) / 2;
-    tileField.add(part(new RoundedBoxGeometry(0.92, 0.14, 0.92, 2, 0.03), '#c26e31', { x, y: -0.04, z, ao: 0, vary: 0.1 }));
-    tiles.push({ i, j, x, z, used: false });
+for (let i = 0; i < NZ; i++) {
+  for (let j = 0; j < NX; j++) {
+    const x = j - (NX - 1) / 2, z = i - (NZ - 1) / 2;
+    const path = j === MID;
+    tileField.add(part(new RoundedBoxGeometry(0.92, path ? 0.1 : 0.14, 0.92, 2, 0.03), path ? '#cdb98f' : '#c26e31', { x, y: path ? -0.06 : -0.04, z, ao: 0, vary: path ? 0.14 : 0.1 }));
+    tiles.push({ i, j, x, z, used: path, side: j < MID ? 'left' : j > MID ? 'right' : 'path' });
   }
 }
 const tileMesh = bake(tileField);
 world.add(tileMesh);
 const TILE_VERTS = tileMesh.geometry.attributes.position.count / tiles.length;
-const tileAt = (i, j) => tiles[i * N + j];
+const tileBase = tileMesh.geometry.attributes.color.array.slice();
+const tileAt = (i, j) => tiles[i * NX + j];
 const GRASS = new THREE.Color('#7d9b40');
 function toGrass(tile) {
   const colors = tileMesh.geometry.attributes.color;
-  const start = (tile.i * N + tile.j) * TILE_VERTS;
+  const start = (tile.i * NX + tile.j) * TILE_VERTS;
   const shade = 0.96 + rand() * 0.08;
   for (let v = start; v < start + TILE_VERTS; v++) colors.setXYZ(v, GRASS.r * shade, GRASS.g * shade, GRASS.b * shade);
   colors.needsUpdate = true;
 }
+
+// Each partner picks a colour; their flowers, fruit and the blossoms they add to the shared tree use it.
+const TINTS = {
+  murdum: { name: 'Mürdüm', dot: '#94507a', fruit: ['#7d3f60', '#94507a'], flowers: ['#f0a7c4', '#fbe7ef', '#d98fb2', '#f6d36d'] },
+  gok: { name: 'Gök mavisi', dot: '#5b7fb5', fruit: ['#3f5f8f', '#5b7fb5'], flowers: ['#9cc0ea', '#e6f0fb', '#7aa3d8', '#f6d36d'] },
+  mercan: { name: 'Mercan', dot: '#d9745a', fruit: ['#b8553e', '#d9745a'], flowers: ['#f7a68f', '#fde3da', '#ee8a72', '#f6d36d'] },
+  altin: { name: 'Altın', dot: '#c9952f', fruit: ['#b7862a', '#d6a43c'], flowers: ['#f6d36d', '#fff1c4', '#efc04a', '#f0a7c4'] },
+};
 
 // ---------- crops ----------
 const sway = [];
@@ -500,6 +668,13 @@ function ribbedPumpkin(r, color) {
   }
   return part(geo, color, { y: r * 0.62, ao: 0.4, aoH: r * 1.3, vary: 0.06 });
 }
+function blossom(g, color, x, y, z, size = 0.035) {
+  for (let p = 0; p < 5; p++) {
+    const pa = (p / 5) * Math.PI * 2;
+    g.add(part(new THREE.SphereGeometry(size, 4, 3), color, { x: x + Math.cos(pa) * size * 1.15, y, z: z + Math.sin(pa) * size * 1.15, ao: 0 }));
+  }
+  g.add(part(new THREE.SphereGeometry(size * 0.85, 4, 3), '#f6c445', { x, y: y + 0.012, z, ao: 0 }));
+}
 const builders = {
   pumpkin() {
     const g = new THREE.Group();
@@ -511,16 +686,6 @@ const builders = {
     }
     return g;
   },
-  bigPumpkin() {
-    const g = new THREE.Group();
-    g.add(ribbedPumpkin(0.82, '#f0a033'));
-    g.add(part(new THREE.CylinderGeometry(0.06, 0.1, 0.3, 6), '#5c6e2a', { y: 1.15, rz: 0.25 }));
-    for (let k = 0; k < 5; k++) {
-      const a = k * 1.3 + rand();
-      g.add(part(new THREE.ConeGeometry(0.28, 0.05, 5), '#6b9137', { x: Math.cos(a) * 0.82, y: 0.04, z: Math.sin(a) * 0.82, ao: 0.15 }));
-    }
-    return g;
-  },
   wheat() {
     const g = new THREE.Group();
     for (let k = 0; k < 26; k++) {
@@ -529,7 +694,6 @@ const builders = {
       tuft.position.set((rand() - 0.5) * 0.8, 0, (rand() - 0.5) * 0.8);
       tuft.add(part(new THREE.BoxGeometry(0.025, h, 0.025), '#c99a46', { y: h / 2, ao: 0.45, aoH: 0.6 }));
       tuft.add(part(new THREE.OctahedronGeometry(0.06, 0), '#f2c766', { y: h + 0.05, ao: 0, vary: 0.14 }));
-      tuft.userData = { phase: rand() * 6, amp: 0.05 + rand() * 0.04 };
       g.add(tuft);
     }
     return g;
@@ -545,35 +709,25 @@ const builders = {
     }
     return g;
   },
-  tree() {
+  tree(tint) {
     const g = new THREE.Group();
     g.add(part(new THREE.CylinderGeometry(0.065, 0.11, 0.55, 6), '#7a4b2a', { y: 0.27, jit: 0.015 }));
-    const crown = new THREE.Group();
-    crown.add(part(new THREE.IcosahedronGeometry(0.42, 0), '#5f8c34', { y: 0.78, jit: 0.08, aoH: 1.2, ao: 0.35 }));
-    crown.add(part(new THREE.IcosahedronGeometry(0.28, 0), '#7aa443', { x: 0.2, y: 0.98, z: 0.1, jit: 0.05, aoH: 1.2, ao: 0.3 }));
-    crown.add(part(new THREE.IcosahedronGeometry(0.22, 0), '#6a9a3a', { x: -0.2, y: 0.9, z: -0.14, jit: 0.05, aoH: 1.2, ao: 0.3 }));
-    crown.userData = { phase: rand() * 6, amp: 0.02 };
-    g.add(crown);
+    g.add(part(new THREE.IcosahedronGeometry(0.42, 0), '#5f8c34', { y: 0.78, jit: 0.08, aoH: 1.2, ao: 0.35 }));
+    g.add(part(new THREE.IcosahedronGeometry(0.28, 0), '#7aa443', { x: 0.2, y: 0.98, z: 0.1, jit: 0.05, aoH: 1.2, ao: 0.3 }));
+    g.add(part(new THREE.IcosahedronGeometry(0.22, 0), '#6a9a3a', { x: -0.2, y: 0.9, z: -0.14, jit: 0.05, aoH: 1.2, ao: 0.3 }));
     for (let k = 0; k < 6; k++) {
       const a = k * 1.05 + rand() * 0.4;
-      g.add(part(new THREE.IcosahedronGeometry(0.08, 0), k % 2 ? '#7d3f60' : '#94507a', { x: Math.cos(a) * 0.3, y: 0.08, z: Math.sin(a) * 0.3, ao: 0.25, aoH: 0.16 }));
+      g.add(part(new THREE.IcosahedronGeometry(0.08, 0), tint.fruit[k % 2], { x: Math.cos(a) * 0.3, y: 0.08, z: Math.sin(a) * 0.3, ao: 0.25, aoH: 0.16 }));
     }
     return g;
   },
-  bush() {
+  bush(tint) {
     const g = new THREE.Group();
     g.add(part(new THREE.IcosahedronGeometry(0.3, 0), '#5f8c34', { y: 0.24, jit: 0.05, aoH: 0.5 }));
     g.add(part(new THREE.IcosahedronGeometry(0.2, 0), '#7aa443', { x: 0.22, y: 0.16, z: -0.12, jit: 0.04, aoH: 0.5 }));
-    const palette = ['#f0a7c4', '#fbe7ef', '#d98fb2', '#f6d36d'];
     for (let k = 0; k < 8; k++) {
       const a = (k / 8) * Math.PI * 2 + rand() * 0.4, r = 0.2 + rand() * 0.1;
-      const fx = Math.cos(a) * r, fz = Math.sin(a) * r, fy = 0.32 + rand() * 0.16;
-      const color = palette[k % palette.length];
-      for (let p = 0; p < 5; p++) {
-        const pa = (p / 5) * Math.PI * 2;
-        g.add(part(new THREE.SphereGeometry(0.035, 4, 3), color, { x: fx + Math.cos(pa) * 0.04, y: fy, z: fz + Math.sin(pa) * 0.04, ao: 0 }));
-      }
-      g.add(part(new THREE.SphereGeometry(0.03, 4, 3), '#f6c445', { x: fx, y: fy + 0.012, z: fz, ao: 0 }));
+      blossom(g, tint.flowers[k % tint.flowers.length], Math.cos(a) * r, 0.32 + rand() * 0.16, Math.sin(a) * r);
     }
     return g;
   },
@@ -593,36 +747,62 @@ const builders = {
       }
       head.add(part(new THREE.CylinderGeometry(0.085, 0.085, 0.04, 8), '#6b4220', { ao: 0 }));
       plantG.add(head);
-      plantG.userData = { phase: rand() * 6, amp: 0.035 };
       g.add(plantG);
     }
+    return g;
+  },
+  // The shared tree: blossoms in both partners' colours. It only grows with goals they reach together.
+  bizTree(_, tints) {
+    const outer = new THREE.Group();
+    const g = new THREE.Group();
+    g.scale.setScalar(1.3);
+    outer.add(g);
+    g.add(part(new THREE.CylinderGeometry(0.11, 0.2, 1.0, 7), '#7a4b2a', { y: 0.5, jit: 0.02, aoH: 1 }));
+    g.add(part(new THREE.CylinderGeometry(0.05, 0.08, 0.5, 5), '#7a4b2a', { x: 0.18, y: 1.0, rz: -0.7 }));
+    g.add(part(new THREE.CylinderGeometry(0.05, 0.08, 0.5, 5), '#7a4b2a', { x: -0.18, y: 1.0, rz: 0.7 }));
+    const crowns = [[0, 1.45, 0, 0.62], [0.45, 1.25, 0.15, 0.42], [-0.45, 1.28, -0.1, 0.44], [0.1, 1.2, -0.42, 0.4], [-0.1, 1.22, 0.42, 0.4]];
+    crowns.forEach(([x, y, z, r], k) => g.add(part(new THREE.IcosahedronGeometry(r, 0), k % 2 ? '#7aa443' : '#5f8c34', { x, y, z, jit: 0.08, aoH: 2.2, ao: 0.4 })));
+    for (let k = 0; k < 26; k++) {
+      const a = rand() * Math.PI * 2, e = rand() * 1.1, r = 0.58 + rand() * 0.12;
+      const tint = tints[k % 2];
+      blossom(g, tint.flowers[k % 3], Math.cos(a) * Math.cos(e) * r, 1.32 + Math.sin(e) * r * 0.8, Math.sin(a) * Math.cos(e) * r, 0.045);
+    }
+    return outer;
+  },
+  bench() {
+    const g = new THREE.Group();
+    const wood = '#9a6237';
+    g.add(part(new THREE.BoxGeometry(0.62, 0.05, 0.2), wood, { y: 0.2, ao: 0 }));
+    g.add(part(new THREE.BoxGeometry(0.62, 0.14, 0.04), wood, { y: 0.34, z: -0.1, ao: 0 }));
+    for (const x of [-0.26, 0.26]) for (const z of [-0.07, 0.07]) g.add(part(new THREE.BoxGeometry(0.04, 0.2, 0.04), '#6e4426', { x, y: 0.1, z, ao: 0.3, aoH: 0.2 }));
     return g;
   },
 };
 
 const STAGE_SCALE = [0, 0.38, 0.62, 0.84, 1];
 const crops = [];
-const freeOrder = [];
+const freeBy = { left: [], right: [] };
 const SWAYS = { wheat: 0.045, sunflower: 0.035, tree: 0.018 };
-function place(kind, x, z, stageLevel, animate) {
+let tintBy = { left: TINTS.murdum, right: TINTS.gok };
+function place(kind, x, z, stageLevel, animate, side) {
   const g = new THREE.Group();
-  g.add(bake(builders[kind]()));
+  g.add(bake(builders[kind](tintBy[side], [tintBy.left, tintBy.right])));
   g.position.set(x, 0.03, z);
   if (SWAYS[kind] && !reduceMotion) { g.userData = { phase: rand() * 6, amp: SWAYS[kind] }; sway.push(g); }
-  g.rotation.y = Math.floor(rand() * 4) * (Math.PI / 2) + (rand() - 0.5) * 0.25;
+  if (kind !== 'bench' && kind !== 'bizTree') g.rotation.y = Math.floor(rand() * 4) * (Math.PI / 2) + (rand() - 0.5) * 0.25;
   world.add(g);
-  const crop = { g, kind, stage: stageLevel };
+  const crop = { g, kind, stage: stageLevel, side };
   crops.push(crop);
   if (animate) { g.scale.setScalar(0.001); growTo(crop, stageLevel); sparkle({ x, z }); }
   else g.scale.setScalar(STAGE_SCALE[stageLevel]);
   return crop;
 }
-function plant(kind, stageLevel = 1, animate = true) {
-  const tile = freeOrder.find((t) => !t.used);
+function plant(kind, stageLevel = 1, animate = true, side = 'left') {
+  const tile = freeBy[side].find((t) => !t.used);
   if (!tile) return null;
   tile.used = true;
   if (kind === 'tree' || kind === 'bush' || kind === 'sunflower') toGrass(tile);
-  return place(kind, tile.x, tile.z, stageLevel, animate);
+  return place(kind, tile.x, tile.z, stageLevel, animate, side);
 }
 function growTo(crop, level) {
   crop.stage = level;
@@ -634,12 +814,13 @@ function growTo(crop, level) {
 const dropGeo = new THREE.ConeGeometry(0.025, 0.12, 4);
 const dropMat = new THREE.MeshStandardMaterial({ color: '#a9d4f0', transparent: true, opacity: 0.85, roughness: 0.2 });
 const drops = [];
-function rain() {
+function rain(side) {
   if (reduceMotion || replaying) return;
+  const x0 = side === 'right' ? 2 : side === 'left' ? -2 : 0; // centre of each half
   for (let k = 0; k < 45; k++) {
     const d = new THREE.Mesh(dropGeo, dropMat);
     d.rotation.x = Math.PI;
-    d.position.set((rand() - 0.5) * N, 3 + rand() * 3, (rand() - 0.5) * N);
+    d.position.set(side ? x0 + (rand() - 0.5) * 3.2 : (rand() - 0.5) * NX, 3 + rand() * 3, (rand() - 0.5) * NZ);
     d.userData.v = 5 + rand() * 2.5;
     scene.add(d);
     drops.push(d);
@@ -661,7 +842,7 @@ function addButterfly() {
   };
   const lw = wing(-1), rw = wing(1);
   g.add(lw, rw, part(new THREE.CapsuleGeometry(0.02, 0.16, 2, 4), '#3a2a20', { rx: Math.PI / 2, ao: 0 }));
-  g.userData = { lw, rw, phase: rand() * Math.PI * 2, r: 1.8 + rand() * 1.4, h: 1.0 + rand() * 0.9, speed: 0.3 + rand() * 0.15 };
+  g.userData = { lw, rw, phase: rand() * Math.PI * 2, r: 1.8 + rand() * 1.6, h: 1.0 + rand() * 0.9, speed: 0.3 + rand() * 0.15 };
   scene.add(g);
   butterflies.push(g);
 }
@@ -669,30 +850,52 @@ const fireflies = [];
 function addFireflies(count) {
   for (let k = 0; k < count; k++) {
     const f = glowSprite(0.32);
-    f.userData = { x: (rand() - 0.5) * N, z: (rand() - 0.5) * N, y: 0.4 + rand() * 1.3, p: rand() * 6 };
+    f.userData = { x: (rand() - 0.5) * NX, z: (rand() - 0.5) * NZ, y: 0.4 + rand() * 1.3, p: rand() * 6 };
     scene.add(f);
     fireflies.push(f);
   }
 }
-// ---------- starting garden: twelve days of earlier care ----------
-// W wheat, T tree, C carrot, p pumpkin, P one giant pumpkin over a 2x2 block, F sunflower, B flower bush, . free for today
-const LAYOUT = ['WWTCpW', 'WPPCTW', 'CPPWpC', 'TpCF..', 'WWC...', 'CT....'];
+
+// ---------- building a garden: ours, or a neighbour's when visiting ----------
+// W wheat, T tree, C carrot, p pumpkin, F sunflower, B flower bush, . free for today. Each half is 3 columns x 6 rows.
 const KIND = { W: 'wheat', T: 'tree', C: 'carrot', p: 'pumpkin', F: 'sunflower', B: 'bush' };
-let giantPlaced = false;
-LAYOUT.forEach((row, i) => [...row].forEach((ch, j) => {
-  const tile = tileAt(i, j);
-  if (ch === '.') { freeOrder.push(tile); return; }
-  tile.used = true;
-  if (ch === 'P') {
-    if (!giantPlaced) { giantPlaced = true; place('bigPumpkin', tile.x + 0.5, tile.z + 0.5, 4, false); }
-    return;
+let bizTree = null;
+function clearGarden() {
+  for (const c of crops) { world.remove(c.g); c.g.traverse((o) => o.geometry?.dispose()); }
+  crops.length = 0;
+  sway.length = 0;
+  tweens.length = 0;
+  for (const b of butterflies) scene.remove(b);
+  butterflies.length = 0;
+  for (const f of fireflies) { scene.remove(f); f.material.dispose(); }
+  fireflies.length = 0;
+  const colors = tileMesh.geometry.attributes.color;
+  colors.array.set(tileBase);
+  colors.needsUpdate = true;
+  tiles.forEach((t) => { t.used = t.side === 'path'; });
+  freeBy.left.length = 0;
+  freeBy.right.length = 0;
+  bizTree = null;
+}
+function buildGarden({ left, right, tints, bizStage }) {
+  clearGarden();
+  tintBy = tints;
+  for (const [side, rows, j0] of [['left', left, 0], ['right', right, MID + 1]]) {
+    rows.forEach((row, i) => [...row].forEach((ch, dj) => {
+      const tile = tileAt(i, j0 + dj);
+      if (ch === '.') { freeBy[side].push(tile); return; }
+      tile.used = true;
+      const kind = KIND[ch];
+      if (kind === 'tree' || kind === 'bush' || kind === 'sunflower') toGrass(tile);
+      place(kind, tile.x, tile.z, rand() > 0.25 ? 4 : 3, false, side);
+    }));
   }
-  const kind = KIND[ch];
-  if (kind === 'tree' || kind === 'bush' || kind === 'sunflower') toGrass(tile);
-  place(kind, tile.x, tile.z, rand() > 0.25 ? 4 : 3, false);
-}));
-addButterfly();
-addFireflies(5);
+  bizTree = place('bizTree', 0, -0.5, bizStage, false, 'left');
+  place('bench', 0, 1.5, 4, false, 'left');
+  addButterfly();
+  addFireflies(4);
+  renderer.shadowMap.needsUpdate = true;
+}
 
 // ---------- real sky: Ankara sun, moon and weather ----------
 // Preview overrides for testing: ?saat=22:30 and ?hava=acik|parcali|kapali|sis|cisenti|yagmur|kar|firtina
@@ -794,7 +997,7 @@ for (let k = 0; k < 7; k++) {
 }
 
 // Rain: one instanced mesh of thin streaks. Snow: one point cloud. Each is a single draw call.
-const RAIN_MAX = 420, SNOW_MAX = 320, SPAN = N + 0.6;
+const RAIN_MAX = 420, SNOW_MAX = 320, SPAN = NX + 0.6;
 const rainMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.014, 0.26, 0.014), new THREE.MeshBasicMaterial({ color: '#bcd6ea', transparent: true, opacity: 0.6, depthWrite: false }), RAIN_MAX);
 rainMesh.frustumCulled = false;
 rainMesh.count = 0;
@@ -921,56 +1124,65 @@ loadWeather();
 setInterval(updateSky, 30000);
 setInterval(loadWeather, 15 * 60000);
 
-// ---------- garden actions: what each task does to the plot ----------
+// ---------- garden actions: what each task does to that person's half ----------
 const produceCycle = ['carrot', 'pumpkin', 'wheat'];
 const mealCycle = ['bush', 'tree', 'sunflower'];
-const played = { water: 0, walk: 0, produce: 0, meals: 0, sleep: 0 };
-const FULL = 'Bugünlük boş tarla kalmadı. Uygulamada tarla günler geçtikçe genişleyecek.';
+const played = { left: { produce: 0, meals: 0 }, right: { produce: 0, meals: 0 } };
+const FULL = 'Bu yarıda boş tarla kalmadı. Uygulamada tarla günler geçtikçe genişleyecek.';
 const actions = {
-  water() {
-    played.water += 1;
-    rain();
-    const growing = crops.filter((c) => c.stage < 4);
+  water(side) {
+    rain(side);
+    const growing = crops.filter((c) => c.side === side && c.stage < 4 && c.kind !== 'bizTree');
     if (reduceMotion || replaying) growing.slice(0, 4).forEach((c) => growTo(c, c.stage + 1));
     else growing.slice(0, 4).forEach((c, k) => setTimeout(() => growTo(c, c.stage + 1), 500 + k * 120));
     return growing.length ? 'Ekinler suyunu aldı, biraz daha büyüdüler.' : 'Toprak suyunu aldı, her şey yerinde.';
   },
-  produce() {
-    const crop = plant(produceCycle[played.produce++ % produceCycle.length], 1, !replaying);
+  produce(side) {
+    const crop = plant(produceCycle[played[side].produce++ % produceCycle.length], 1, !replaying, side);
     return crop ? 'Yeni bir ekin filizlendi.' : FULL;
   },
-  meals() {
-    const kind = mealCycle[played.meals++ % mealCycle.length];
-    const crop = plant(kind, 2, !replaying);
+  meals(side) {
+    const kind = mealCycle[played[side].meals++ % mealCycle.length];
+    const crop = plant(kind, 2, !replaying, side);
     if (!crop) return FULL;
     return kind === 'tree' ? 'Yeni bir ağaç kök saldı.' : kind === 'sunflower' ? 'Ayçiçekleri güne döndü.' : 'Bir çiçek açtı.';
   },
-  walk() { played.walk += 1; addButterfly(); return 'Bir kelebek bahçene uğradı.'; },
-  sleep() { played.sleep += 1; addFireflies(8); return 'Ateş böcekleri geldi. İyi uykular.'; },
+  walk() { addButterfly(); return 'Bir kelebek bahçene uğradı.'; },
+  sleep() { addFireflies(8); return 'Ateş böcekleri geldi. İyi uykular.'; },
 };
 const DONE_TEXT = {
-  water: 'Su görevi tamam. Bütün ekinler güneşe uzandı.',
+  water: 'Su görevi tamam. Senin tarafındaki ekinler güneşe uzandı.',
   walk: 'Yürüyüş tamam. Kelebekler bahçede dans ediyor.',
-  produce: 'Sebze ve meyve tamam. Tarlan rengârenk.',
+  produce: 'Sebze ve meyve tamam. Tarafın rengârenk.',
   meals: 'Öğünlerin düzenli. Bahçe çiçek açtı.',
   sleep: 'İyi dinlendin. Bahçe de seninle dinlendi.',
 };
-function finishBonus(key) {
-  if (key === 'water') crops.forEach((c, k) => { if (c.stage >= 4) return; if (replaying) growTo(c, 4); else setTimeout(() => growTo(c, 4), k * 40); });
-  if (!replaying) sparkle({ x: 0, z: 0 });
+function finishBonus(key, side) {
+  if (key === 'water') crops.forEach((c, k) => {
+    if (c.side !== side || c.stage >= 4 || c.kind === 'bizTree') return;
+    if (replaying) growTo(c, 4); else setTimeout(() => growTo(c, 4), k * 40);
+  });
+  if (!replaying) sparkle({ x: side === 'right' ? 2 : -2, z: 0 });
 }
 
 // ---------- day state (kept in this browser only) ----------
-const STORE = 'bahce-prototip-v1';
+const STORE = 'bahce-prototip-v2';
 // The day turns over at 04:00 Istanbul time, so a late snack still counts for the evening it belongs to.
 function dayKey() { return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(now().getTime() - 4 * 3600000)); }
 const DEFAULT_TARGETS = { water: 2, walk: 30, produce: 5, meals: 3, sleep: 7 };
 function freshDay() { return { day: dayKey(), foods: [], tasks: { water: 0, walk: 0, produce: 0, sleep: 0 } }; }
-let state = { ...freshDay(), targets: { ...DEFAULT_TARGETS }, kcalTarget: 1800, profile: { sex: 'f', age: 26, height: 165, weight: 65, act: '1.375', goal: '-300' } };
+let state = {
+  ...freshDay(), targets: { ...DEFAULT_TARGETS }, kcalTarget: 1800,
+  profile: { sex: 'f', age: 26, height: 165, weight: 65, act: '1.375', goal: '-300' },
+  me: { name: 'Baki', tint: 'gok' }, partner: { name: 'Sevgilim', tint: 'murdum' },
+  settings: { kcalOn: true, shareKcal: false, shareMeals: true, shareTasks: true, nudges: true, quietFrom: '23:00', quietTo: '08:00', theme: 'system' },
+  neighbors: [{ id: 'n1', names: 'Arda & Zeynep', tint: 'mercan', days: 34, example: true }],
+  likes: {}, giftDay: null,
+};
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
   if (saved) {
-    state = { ...state, ...saved, targets: { ...DEFAULT_TARGETS, ...saved.targets }, profile: { ...state.profile, ...saved.profile } };
+    state = { ...state, ...saved, targets: { ...DEFAULT_TARGETS, ...saved.targets }, profile: { ...state.profile, ...saved.profile }, me: { ...state.me, ...saved.me }, partner: { ...state.partner, ...saved.partner }, settings: { ...state.settings, ...saved.settings } };
     if (state.day !== dayKey()) Object.assign(state, freshDay());
   }
 } catch { /* storage unavailable: start fresh */ }
@@ -1298,7 +1510,7 @@ function paintTasks() {
         : `<button class="minus" type="button" data-step="${t.key}" data-dir="-1" aria-label="${t.title}: geri al">−</button><button type="button" data-step="${t.key}" data-dir="1" aria-label="${t.stepLabel}">+</button>`;
     return `<div class="task${done ? ' done' : ''}">
       <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${TASK_ICONS[t.key]}</svg></span>
-      <div class="t"><b>${t.title}</b><span class="amt">${t.toggle ? (done ? 'tamam' : `${target} saat`) : `${v.toLocaleString('tr-TR')} / ${t.show(target)}`}</span>
+      <div class="t"><b>${t.title}</b><span class="amt">${t.toggle ? (done ? 'tamam' : `${target} saat`) : `${t.show(v)} / ${t.show(target)}`}</span>
         <span class="bar"><i style="width:${Math.min(100, (v / target) * 100)}%"></i></span>
         <span class="reward">${t.reward}</span></div>
       <div class="step">${control}</div>
@@ -1328,24 +1540,77 @@ document.getElementById('targetForm').addEventListener('change', (e) => {
   if (key && v > 0) { state.targets[key] = v; if (key === 'sleep' && state.tasks.sleep) state.tasks.sleep = v; save(); paintAll(); }
 });
 
+// ---------- the couple: partner's day (example data until real accounts exist) ----------
+const PARTNER_TASKS = { water: 1.25, walk: 20, produce: 3, meals: 2, sleep: 7 };
+const partnerDone = () => TASKS.filter((t) => PARTNER_TASKS[t.key] >= DEFAULT_TARGETS[t.key]).length;
+const JOINT = { label: 'Bu hafta ikimiz toplam 25 L su', target: 25, before: 15.5 };
+const jointValue = () => JOINT.before + state.tasks.water + PARTNER_TASKS.water;
+const bizStageFor = (v) => (v >= JOINT.target ? 4 : v / JOINT.target >= 0.75 ? 3 : 2);
+const feed = [
+  { who: 'partner', key: 'water', text: '2 bardak su içti', time: '08:40', id: 'p1' },
+  { who: 'partner', key: 'meals', text: 'kahvaltısını ekledi', time: '09:05', id: 'p2' },
+  { who: 'partner', key: 'walk', text: '20 dakika yürüdü', time: '12:30', id: 'p3' },
+];
+const FEED_TEXT = { water: 'bir bardak su içti', walk: '10 dakika yürüdü', produce: 'bir porsiyon sebze-meyve yedi', meals: 'bir öğün ekledi', sleep: 'iyi uyudu' };
+const FEED_ICON = { water: TASK_ICONS.water, walk: TASK_ICONS.walk, produce: TASK_ICONS.produce, meals: TASK_ICONS.meals, sleep: TASK_ICONS.sleep };
+const nameOf = (who) => (who === 'me' ? 'Sen' : escapeHtml(state.partner.name || 'Partnerin'));
+const tintOf = (who) => TINTS[who === 'me' ? state.me.tint : state.partner.tint];
+
+function paintCouple() {
+  const mine = TASKS.filter((t) => isDone(t.key)).length;
+  document.getElementById('coupleBar').innerHTML = [['me', mine, 'Sol yarı'], ['partner', partnerDone(), 'Sağ yarı']].map(([who, n, half]) => `
+    <div class="who"><span class="avatar" style="--tint:${tintOf(who).dot}">${(who === 'me' ? state.me.name : state.partner.name).trim().charAt(0).toLocaleUpperCase('tr') || '?'}</span>
+      <span><b>${who === 'me' ? escapeHtml(state.me.name || 'Sen') : nameOf(who)}</b><small>${half} · ${n}/${TASKS.length} görev</small></span></div>`).join('');
+  const v = jointValue();
+  document.getElementById('jointVal').textContent = `${v.toLocaleString('tr-TR')} / ${JOINT.target} L`;
+  document.querySelector('#jointBar i').style.width = `${Math.min(100, (v / JOINT.target) * 100)}%`;
+  document.getElementById('jointBar').classList.toggle('full', v >= JOINT.target);
+  const today = Object.values(state.tasks).some((x) => x > 0) || state.foods.length > 0;
+  document.getElementById('streakNote').textContent = today ? 'İkiniz de bugün bir şey yaptınız, ortak seri sürüyor.' : `${escapeHtml(state.partner.name || 'Partnerin')} bugün başladı. Sen de bir şey ekleyince ortak seri sürer.`;
+  document.getElementById('feedList').innerHTML = feed.slice(-4).reverse().map((f) => `
+    <div class="feed-row"><span class="dot" style="--tint:${tintOf(f.who).dot}"><svg viewBox="0 0 24 24" aria-hidden="true">${FEED_ICON[f.key]}</svg></span>
+      <span class="t"><b>${nameOf(f.who)}</b> ${f.text}<small>${f.time}</small></span>
+      ${f.who === 'partner' ? `<button class="heart" type="button" data-like="${f.id}" aria-pressed="${!!state.likes[f.id]}" aria-label="Kalp bırak">${state.likes[f.id] ? '♥' : '♡'}</button>` : ''}</div>`).join('');
+  document.getElementById('nudgeTitle').textContent = `${state.partner.name || 'Partnerin'}'a nazik bir dürtme gönder`;
+}
+document.getElementById('feedList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-like]');
+  if (!b) return;
+  state.likes[b.dataset.like] = !state.likes[b.dataset.like];
+  save();
+  paintCouple();
+});
+document.getElementById('nudges').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-nudge]');
+  if (!b) return;
+  toast(`Gönderildi: “${b.dataset.nudge}” Sessiz saatlerde bekletilir.`);
+});
+
 // ---------- garden summary, tabs, and queued garden moments ----------
 function paintSummary() {
   const total = kcalTotal(), ratio = total / state.kcalTarget;
-  document.getElementById('sumKcal').innerHTML = `${fmt(total)} <small>/ ${fmt(state.kcalTarget)}</small>`;
+  const on = state.settings.kcalOn;
+  document.getElementById('sumKcal').innerHTML = on ? `${fmt(total)} <small>/ ${fmt(state.kcalTarget)}</small>` : `${state.foods.length} <small>kayıt</small>`;
+  document.getElementById('sumKcalLabel').textContent = on ? 'Bugünkü kalori' : 'Bugünkü öğünler';
   const bar = document.getElementById('sumKcalBar');
-  bar.querySelector('i').style.width = `${Math.min(100, ratio * 100)}%`;
-  bar.classList.toggle('full', ratio >= 1);
+  bar.querySelector('i').style.width = on ? `${Math.min(100, ratio * 100)}%` : `${Math.min(100, (mealsDone() / state.targets.meals) * 100)}%`;
+  bar.classList.toggle('full', on && ratio >= 1);
   const done = TASKS.filter((t) => isDone(t.key)).length;
   document.getElementById('sumTasks').innerHTML = `${done} <small>/ ${TASKS.length} tamam</small>`;
   document.getElementById('sumDots').innerHTML = TASKS.map((t) => `<i class="${isDone(t.key) ? 'on' : ''}"></i>`).join('');
 }
-function paintAll() { paintFoods(); paintCalc(); paintTasks(); paintSummary(); paintBadge(); }
+function paintAll() {
+  document.body.classList.toggle('no-kcal', !state.settings.kcalOn);
+  paintFoods(); paintCalc(); paintTasks(); paintSummary(); paintCouple(); paintProfile(); paintBadge();
+}
 
 const queue = [];
 let currentTab = 'bahce';
+let visiting = null;
 function earn(key, completed) {
   queue.push({ key, completed });
-  if (currentTab === 'bahce') playQueue();
+  feed.push({ who: 'me', key, text: FEED_TEXT[key], time: fmtTime.format(now()), id: `m${Date.now()}${feed.length}` });
+  if (currentTab === 'bahce' && !visiting) playQueue();
 }
 function paintBadge() {
   const b = document.getElementById('gardenBadge');
@@ -1354,14 +1619,20 @@ function paintBadge() {
 }
 let playing = false;
 function playQueue() {
-  if (playing || !queue.length) { paintBadge(); return; }
+  if (playing || !queue.length || visiting) { paintBadge(); return; }
   playing = true;
   const step = () => {
     const ev = queue.shift();
     paintBadge();
     if (!ev) { playing = false; return; }
-    let text = actions[ev.key]();
-    if (ev.completed) { finishBonus(ev.key); text = DONE_TEXT[ev.key]; }
+    let text = actions[ev.key]('left');
+    if (ev.completed) { finishBonus(ev.key, 'left'); text = DONE_TEXT[ev.key]; }
+    const stage = bizStageFor(jointValue());
+    if (bizTree && stage > bizTree.stage) {
+      growTo(bizTree, stage);
+      sparkle({ x: 0, z: -0.5 });
+      text = stage === 4 ? 'Ortak hedefe ulaştınız. Biz ağacı tam çiçekte.' : 'Biz ağacı büyüdü. Ortak hedefe az kaldı.';
+    }
     toast(text);
     setTimeout(step, reduceMotion ? 300 : 1100);
   };
@@ -1370,25 +1641,167 @@ function playQueue() {
 function showTab(name) {
   currentTab = name;
   document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
-  for (const v of ['bahce', 'ogunler', 'gorevler']) document.getElementById(`view-${v}`).hidden = v !== name;
+  for (const v of ['bahce', 'ogunler', 'gorevler', 'profil']) document.getElementById(`view-${v}`).hidden = v !== name;
   window.scrollTo(0, 0);
   if (name === 'bahce') playQueue();
 }
-document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => { if (visiting && t.dataset.tab !== 'bahce') goHome(); showTab(t.dataset.tab); }));
 document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.go)));
 document.getElementById('hard').addEventListener('click', () => {
-  toast('Zor günlerde bahçe solmaz, sadece dinlenir. Serin bozulmadı.');
+  toast('Zor günlerde bahçe solmaz, sadece dinlenir. Ortak serin bozulmadı.');
 });
 
-// Rebuild what today already earned, without animation, so the garden matches the saved day.
-replaying = true;
-for (let k = 0; k < Math.round(state.tasks.water / 0.25); k++) actions.water();
-if (state.tasks.water >= state.targets.water) finishBonus('water');
-for (let k = 0; k < state.tasks.produce; k++) actions.produce();
-for (let k = 0; k < mealsDone(); k++) actions.meals();
-for (let k = 0; k < Math.floor(state.tasks.walk / 10); k++) actions.walk();
-if (state.tasks.sleep >= state.targets.sleep) actions.sleep();
-replaying = false;
+// ---------- profile ----------
+const SWITCHES = { sKcal: 'kcalOn', sShareKcal: 'shareKcal', sShareMeals: 'shareMeals', sShareTasks: 'shareTasks', sNudges: 'nudges' };
+function tintPicker(el, who) {
+  el.innerHTML = Object.entries(TINTS).map(([id, t]) => `<button class="swatch" type="button" data-tint="${id}" data-who="${who}" style="--tint:${t.dot}" aria-pressed="${state[who].tint === id}" aria-label="${t.name}"></button>`).join('');
+}
+function paintProfile() {
+  document.getElementById('meAvatar').textContent = (state.me.name.trim().charAt(0) || '?').toLocaleUpperCase('tr');
+  document.getElementById('meAvatar').style.setProperty('--tint', TINTS[state.me.tint].dot);
+  document.getElementById('partnerAvatar').textContent = (state.partner.name.trim().charAt(0) || '?').toLocaleUpperCase('tr');
+  document.getElementById('partnerAvatar').style.setProperty('--tint', TINTS[state.partner.tint].dot);
+  tintPicker(document.getElementById('meTints'), 'me');
+  tintPicker(document.getElementById('partnerTints'), 'partner');
+  for (const [id, key] of Object.entries(SWITCHES)) document.getElementById(id).checked = !!state.settings[key];
+  document.getElementById('quietFrom').value = state.settings.quietFrom;
+  document.getElementById('quietTo').value = state.settings.quietTo;
+  document.querySelectorAll('[data-theme-pick]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themePick === state.settings.theme)));
+  document.getElementById('neighborList').innerHTML = state.neighbors.map((n) => `
+    <div class="neighbor"><span class="avatar pair" style="--tint:${TINTS[n.tint].dot}">${escapeHtml(n.names.charAt(0))}</span>
+      <span class="t"><b>${escapeHtml(n.names)}</b><small>${n.example ? 'Örnek komşu' : 'Kodla eklendi'} · ${n.days} gündür büyüyor</small></span>
+      <button class="btn soft small" type="button" data-visit="${n.id}">Ziyaret et</button></div>`).join('');
+}
+for (const [id, key] of [['meName', 'me'], ['partnerName', 'partner']]) {
+  const el = document.getElementById(id);
+  el.value = state[key].name;
+  el.addEventListener('input', () => { state[key].name = el.value.slice(0, 20); save(); paintCouple(); paintProfile(); });
+}
+document.getElementById('view-profil').addEventListener('click', (e) => {
+  const sw = e.target.closest('[data-tint]');
+  if (sw) {
+    state[sw.dataset.who].tint = sw.dataset.tint;
+    save();
+    rebuildHome();
+    paintAll();
+    return;
+  }
+  const th = e.target.closest('[data-theme-pick]');
+  if (th) {
+    state.settings.theme = th.dataset.themePick;
+    applyTheme();
+    save();
+    paintProfile();
+    return;
+  }
+  const visit = e.target.closest('[data-visit]');
+  if (visit) { visitNeighbor(state.neighbors.find((n) => n.id === visit.dataset.visit)); return; }
+  if (e.target.id === 'copyCode') {
+    const code = document.getElementById('inviteCode').textContent;
+    navigator.clipboard?.writeText(code).then(() => toast('Davet kodu kopyalandı.'), () => selectText('inviteCode'));
+    return;
+  }
+  const danger = e.target.closest('[data-danger]');
+  if (danger) {
+    const box = document.getElementById('dangerConfirm');
+    box.hidden = false;
+    box.querySelector('p').textContent = danger.dataset.danger === 'leave'
+      ? 'Bahçeden ayrılırsan ortak bahçe partnerinde kalır, sen yeni bir bahçe kurabilirsin. Bu prototipte bir şey değişmez.'
+      : 'Hesabını silersen tüm kayıtların kalıcı olarak silinir. Bu prototipte bir şey silinmez.';
+    return;
+  }
+  if (e.target.id === 'dangerCancel') document.getElementById('dangerConfirm').hidden = true;
+});
+function selectText(id) { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); getSelection().removeAllRanges(); getSelection().addRange(r); }
+for (const [id, key] of Object.entries(SWITCHES)) {
+  document.getElementById(id).addEventListener('change', (e) => { state.settings[key] = e.target.checked; save(); paintAll(); });
+}
+for (const id of ['quietFrom', 'quietTo']) document.getElementById(id).addEventListener('change', (e) => { state.settings[id] = e.target.value; save(); });
+document.getElementById('addNeighbor').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const input = document.getElementById('neighborCode');
+  const code = input.value.trim().toUpperCase();
+  if (!/^[A-Z0-9-]{6,10}$/.test(code)) { toast('Komşu kodu 6 haneli olmalı, örneğin BHC-4K7Q.'); return; }
+  state.neighbors.push({ id: `n${Date.now()}`, names: `Komşu bahçe ${code}`, tint: 'mercan', days: 3, example: false });
+  input.value = '';
+  save();
+  paintProfile();
+  toast('Komşu eklendi. Bahçelerinizi birbirinize gösterebilirsiniz.');
+});
+function applyTheme() {
+  const t = state.settings.theme;
+  if (t === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+}
+
+// ---------- neighbours: visit a friend couple's garden and leave a seed ----------
+const NEIGHBOR_GARDEN = {
+  left: ['WTW', 'CpC', 'TWB', 'pCW', 'F..', 'W..'],
+  right: ['CWT', 'WBC', 'pTW', 'CWp', '.F.', '...'],
+};
+function visitNeighbor(n) {
+  if (!n) return;
+  visiting = n;
+  seed = 101 + n.names.length;
+  buildGarden({ ...NEIGHBOR_GARDEN, tints: { left: TINTS[n.tint], right: TINTS.altin }, bizStage: 3 });
+  document.getElementById('view-bahce').classList.add('visiting');
+  document.getElementById('gardenTitle').textContent = n.names;
+  document.getElementById('gardenEyebrow').textContent = 'Komşu bahçesi';
+  const gift = document.getElementById('sendSeed');
+  gift.disabled = state.giftDay === `${state.day}:${n.id}`;
+  gift.textContent = gift.disabled ? 'Bugün tohum bıraktın' : 'Tohum bırak';
+  showTab('bahce');
+}
+document.getElementById('sendSeed').addEventListener('click', (e) => {
+  if (!visiting) return;
+  // The gift blooms in the visitor's own colour, whichever half it lands in.
+  const side = freeBy.left.some((x) => !x.used) ? 'left' : 'right';
+  const own = tintBy[side];
+  tintBy = { ...tintBy, [side]: TINTS[state.me.tint] };
+  plant('bush', 2, true, side);
+  tintBy = { ...tintBy, [side]: own };
+  state.giftDay = `${state.day}:${visiting.id}`;
+  save();
+  e.target.disabled = true;
+  e.target.textContent = 'Bugün tohum bıraktın';
+  toast(`Tohumun ${visiting.names} bahçesinde, senin renginde filizlendi.`);
+});
+document.getElementById('goHome').addEventListener('click', () => goHome());
+function goHome() {
+  if (!visiting) return;
+  visiting = null;
+  document.getElementById('view-bahce').classList.remove('visiting');
+  document.getElementById('gardenTitle').textContent = 'Bahçemiz';
+  document.getElementById('gardenEyebrow').textContent = 'İkimizin Bahçesi';
+  rebuildHome();
+  showTab('bahce');
+}
+
+// Rebuild our garden: the starting layout, then today's progress for both of us, without animation.
+const HOME = {
+  left: ['WTC', 'CpW', 'pWC', 'T..', 'W..', 'C..'],
+  right: ['WCT', 'pWC', 'CTW', 'p..', 'W..', 'C..'],
+};
+function rebuildHome() {
+  seed = 11;
+  played.left = { produce: 0, meals: 0 };
+  played.right = { produce: 0, meals: 0 };
+  replaying = true;
+  buildGarden({ ...HOME, tints: { left: TINTS[state.me.tint], right: TINTS[state.partner.tint] }, bizStage: bizStageFor(jointValue()) });
+  for (const [side, t, targets] of [['left', state.tasks, state.targets], ['right', PARTNER_TASKS, DEFAULT_TARGETS]]) {
+    for (let k = 0; k < Math.round(t.water / 0.25); k++) actions.water(side);
+    if (t.water >= targets.water) finishBonus('water', side);
+    for (let k = 0; k < t.produce; k++) actions.produce(side);
+    const meals = side === 'left' ? mealsDone() : t.meals;
+    for (let k = 0; k < meals; k++) actions.meals(side);
+    for (let k = 0; k < Math.floor(t.walk / 10); k++) actions.walk();
+    if (t.sleep >= targets.sleep) actions.sleep();
+  }
+  replaying = false;
+  queue.length = 0;
+}
+applyTheme();
+rebuildHome();
 paintMealPick();
 paintAll();
 
