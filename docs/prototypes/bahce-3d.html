@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bahçemiz 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: one phone-width column. The golden-hour plot is the hero; habit rings sit beneath it as the controls that grow it. */
+:root {
+  --bg: #f4eee4;
+  --panel: #fffdf8;
+  --ink: #2f2a25;
+  --ink-soft: #6b635a;
+  --olive: #5f6f3e;
+  --leaf: #3a4a2a;
+  --plum: #6e2a4f;
+  --fig-soft: #ecdbe3;
+  --ring-track: #ebe3d6;
+  --line: #e7dfd2;
+  --glass: rgba(255, 252, 246, 0.86);
+  --shadow: 0 1px 2px rgba(60, 40, 20, 0.06), 0 8px 24px rgba(60, 40, 20, 0.08);
+  --display: 'Fraunces', Georgia, serif;
+  --body: 'Nunito', system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1916; --panel: #26221e; --ink: #f2ece3; --ink-soft: #b8aea2; --olive: #b9c896; --leaf: #dbe6c4;
+    --plum: #dca3c0; --fig-soft: #45303b; --ring-track: #3a352f; --line: #36312b; --glass: rgba(38, 34, 30, 0.88);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1916; --panel: #26221e; --ink: #f2ece3; --ink-soft: #b8aea2; --olive: #b9c896; --leaf: #dbe6c4;
+  --plum: #dca3c0; --fig-soft: #45303b; --ring-track: #3a352f; --line: #36312b; --glass: rgba(38, 34, 30, 0.88);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; }
+.app { max-width: 480px; min-height: 100%; margin: 0 auto; box-sizing: border-box; padding-inline: 16px; padding-block: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.eyebrow { margin: 0 0 2px; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+h1 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 32px; line-height: 1; color: var(--leaf); }
+.day { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.day strong { font-family: var(--display); font-weight: 500; font-size: 26px; line-height: 1; color: var(--plum); font-variant-numeric: tabular-nums; }
+.day span { font-size: 12px; color: var(--ink-soft); }
+
+.stage { position: relative; height: min(50vh, 430px); min-height: 320px; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); touch-action: none; background: #c7d3d8; }
+.stage canvas { display: block; width: 100%; height: 100%; }
+.stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(40, 24, 10, 0.22)); }
+.toast { position: absolute; z-index: 1; left: 50%; bottom: 16px; transform: translate(-50%, 0); width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; padding: 10px 16px; border-radius: 999px; background: var(--glass); color: var(--ink); font-weight: 700; font-size: 14px; text-align: center; box-shadow: var(--shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity .35s, transform .35s; }
+.toast.quiet { opacity: 0; transform: translate(-50%, 8px); }
+
+.habits { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.habit { position: relative; border: 0; border-radius: 20px; background: var(--panel); box-shadow: var(--shadow); color: var(--ink); font: inherit; padding: 10px 2px 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; transition: transform .15s; }
+.habit:active { transform: scale(.96); }
+.ring { position: relative; width: 46px; height: 46px; }
+.ring svg.track { position: absolute; inset: 0; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 4; }
+.ring .bg { stroke: var(--ring-track); }
+.ring .fg { stroke: var(--olive); stroke-linecap: round; transition: stroke-dashoffset .5s cubic-bezier(.3,1.4,.5,1), stroke .3s; }
+.habit.done .ring .fg { stroke: var(--plum); }
+.ring svg.icon { position: absolute; inset: 11px; width: 24px; height: 24px; fill: none; stroke: var(--leaf); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.habit .label { font-size: 12px; font-weight: 800; }
+.habit .n { font-size: 11px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+.foot { display: flex; flex-direction: column; gap: 10px; }
+.hard { min-height: 50px; border: 0; border-radius: 25px; background: var(--fig-soft); color: var(--plum); font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; }
+.legend { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-soft); text-align: center; text-wrap: balance; }
+button:focus-visible { outline: 2px solid var(--plum); outline-offset: 3px; }
+.fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #4a3d30; background: #e9e0d2; }
+@media (max-width: 370px) { .ring { width: 40px; height: 40px; } .ring svg.icon { inset: 9px; width: 22px; height: 22px; } .habit .label { font-size: 11px; } }
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <p class="eyebrow">İkimizin Bahçesi</p>
+      <h1>Bahçemiz</h1>
+    </div>
+    <div class="day"><strong>12</strong><span>gündür büyüyor</span></div>
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="toast quiet" id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="habits" role="group" aria-label="Bugünün alışkanlıkları">
+    <button class="habit" data-key="water" type="button" aria-label="Su: bir bardak ekle">
+      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 C8 9 6 12 6 15 A6 6 0 0 0 18 15 C18 12 16 9 12 3 Z"/></svg></span>
+      <span class="label">Su</span><span class="n"></span>
+    </button>
+    <button class="habit" data-key="produce" type="button" aria-label="Sebze ve meyve: bir porsiyon ekle">
+      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 C5 10 11 5 19 5 C19 13 14 19 5 19 Z M5 19 L13 11"/></svg></span>
+      <span class="label">Sebze</span><span class="n"></span>
+    </button>
+    <button class="habit" data-key="meal" type="button" aria-label="Düzenli öğün: bir öğün ekle">
+      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 A8 8 0 1 0 20 12 A8 8 0 1 0 4 12 Z M8 12 A4 4 0 1 0 16 12 A4 4 0 1 0 8 12 Z"/></svg></span>
+      <span class="label">Öğün</span><span class="n"></span>
+    </button>
+    <button class="habit" data-key="walk" type="button" aria-label="Yürüyüş: işaretle">
+      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4 C10 4 11 6 11 9 C11 12 10 14 8 14 C6 14 5 12 5 9 C5 6 6 4 8 4 Z M16 10 C18 10 19 12 19 14 C19 17 18 19 16 19 C14 19 13 17 13 14 C13 12 14 10 16 10 Z"/></svg></span>
+      <span class="label">Yürüyüş</span><span class="n"></span>
+    </button>
+    <button class="habit" data-key="sleep" type="button" aria-label="Uyku: işaretle">
+      <span class="ring"><svg class="track" viewBox="0 0 46 46" aria-hidden="true"><circle class="bg" cx="23" cy="23" r="20"/><circle class="fg" cx="23" cy="23" r="20"/></svg>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14 A8 8 0 1 1 10 4 A6 6 0 0 0 20 14 Z"/></svg></span>
+      <span class="label">Uyku</span><span class="n"></span>
+    </button>
+  </div>
+
+  <div class="foot">
+    <button class="hard" id="hard" type="button">Bugün zor bir gün</button>
+    <p class="legend">Su ekinleri büyütür · sebze yeni ekin açar · öğün çiçek ve ağaç getirir · yürüyüş kelebek · uyku ateş böceği</p>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const stage = document.getElementById('stage');
+const toastEl = document.getElementById('toast');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let toastTimer;
+function toast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.remove('quiet');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.add('quiet'), 2800);
+}
+
+// ---------- habit rings ----------
+const counts = { water: 5, produce: 2, meal: 2, walk: 0, sleep: 1 };
+const targets = { water: 8, produce: 5, meal: 3, walk: 1, sleep: 1 };
+const CIRC = 2 * Math.PI * 20;
+function paintHabit(key) {
+  const btn = document.querySelector(`.habit[data-key="${key}"]`);
+  const fg = btn.querySelector('.fg');
+  const ratio = Math.min(1, counts[key] / targets[key]);
+  fg.style.strokeDasharray = CIRC;
+  fg.style.strokeDashoffset = CIRC * (1 - ratio);
+  btn.classList.toggle('done', ratio >= 1);
+  btn.querySelector('.n').textContent = targets[key] === 1 ? (counts[key] ? 'tamam' : '—') : `${counts[key]} / ${targets[key]}`;
+}
+Object.keys(counts).forEach(paintHabit);
+
+// ---------- renderer ----------
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (err) {
+  stage.insertAdjacentHTML('beforeend', '<p class="fallback">Bu cihaz 3D bahçeyi gösteremiyor. Uygulamada burada sade bir çizim görünecek.</p>');
+  throw err;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.shadowMap.autoUpdate = false;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+{
+  const c = document.createElement('canvas');
+  c.width = 4; c.height = 256;
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, 256);
+  grd.addColorStop(0, '#9fb3c2');
+  grd.addColorStop(0.6, '#c9c6c0');
+  grd.addColorStop(1, '#e9cdb0');
+  g.fillStyle = grd; g.fillRect(0, 0, 4, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  scene.background = tex;
+}
+scene.fog = new THREE.Fog('#e6cdb3', 22, 40);
+
+const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 60);
+camera.position.set(10, 9.2, 10);
+camera.zoom = 1.1;
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enablePan = false;
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minZoom = 0.85;
+controls.maxZoom = 2.4;
+controls.minPolarAngle = 0.6;
+controls.maxPolarAngle = 1.12;
+controls.target.set(0, 0.1, 0);
+controls.autoRotate = !reduceMotion;
+controls.autoRotateSpeed = 0.35;
+let idleTimer;
+controls.addEventListener('start', () => { controls.autoRotate = false; clearTimeout(idleTimer); });
+controls.addEventListener('end', () => { if (!reduceMotion) idleTimer = setTimeout(() => { controls.autoRotate = true; }, 6000); });
+
+scene.add(new THREE.HemisphereLight('#c9dcec', '#8a5a36', 1.15));
+const sun = new THREE.DirectionalLight('#ffc184', 3.2);
+sun.position.set(7, 7.5, 2.5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -6.5, right: 6.5, top: 6.5, bottom: -6.5, near: 1, far: 30 });
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 0.02;
+sun.shadow.radius = 3;
+scene.add(sun);
+const rim = new THREE.DirectionalLight('#9fc0e0', 0.7);
+rim.position.set(-6, 4, -7);
+scene.add(rim);
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  const aspect = w / h;
+  const halfW = Math.max(4.7, 3.7 * aspect);
+  const halfH = halfW / aspect;
+  camera.left = -halfW; camera.right = halfW; camera.top = halfH; camera.bottom = -halfH;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+
+// ---------- geometry helpers: baked contact shading + hand-made jitter ----------
+let seed = 11;
+function rand() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+const vcMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.82, metalness: 0 });
+const tmpColor = new THREE.Color();
+
+function jitter(geo, amount) {
+  const pos = geo.attributes.position, seen = new Map();
+  for (let i = 0; i < pos.count; i++) {
+    const key = `${pos.getX(i).toFixed(3)},${pos.getY(i).toFixed(3)},${pos.getZ(i).toFixed(3)}`;
+    if (!seen.has(key)) seen.set(key, [(rand() - 0.5) * amount, (rand() - 0.5) * amount, (rand() - 0.5) * amount]);
+    const d = seen.get(key);
+    pos.setXYZ(i, pos.getX(i) + d[0], pos.getY(i) + d[1], pos.getZ(i) + d[2]);
+  }
+  return geo;
+}
+// Darkens each vertex by its height above the ground, so crops sit in soft contact shade without a post-processing pass.
+function part(geo, hex, { x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, jit = 0, ao = 0.42, aoH = 0.55, vary = 0.05 } = {}) {
+  geo = geo.index ? geo.toNonIndexed() : geo;
+  if (jit) jitter(geo, jit);
+  if (rx) geo.rotateX(rx);
+  if (ry) geo.rotateY(ry);
+  if (rz) geo.rotateZ(rz);
+  geo.translate(x, y, z);
+  const base = new THREE.Color(hex);
+  const shift = 1 + (rand() - 0.5) * vary;
+  const pos = geo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.min(1, Math.max(0, pos.getY(i) / aoH));
+    const k = (1 - ao + ao * (t * t * (3 - 2 * t))) * shift;
+    tmpColor.copy(base).multiplyScalar(k);
+    colors.set([tmpColor.r, tmpColor.g, tmpColor.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, vcMat);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+// ---------- tweens and sparkles ----------
+const tweens = [];
+function tween(obj, prop, to, dur = 700, ease = backOut, delay = 0) {
+  if (reduceMotion) { obj[prop] = to; return; }
+  tweens.push({ obj, prop, from: null, to, t0: performance.now() + delay, dur, ease });
+}
+function backOut(t) { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); }
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+const glowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,248,214,1)'); grd.addColorStop(0.35, 'rgba(255,224,140,0.55)'); grd.addColorStop(1, 'rgba(255,210,120,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+function glowSprite(size, color = '#ffffff') {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  s.scale.setScalar(size);
+  return s;
+}
+const sparkles = [];
+function sparkle(at) {
+  if (reduceMotion) return;
+  for (let k = 0; k < 10; k++) {
+    const s = glowSprite(0.18 + rand() * 0.12, rand() > 0.5 ? '#fff1c4' : '#ffd7e6');
+    s.position.set(at.x + (rand() - 0.5) * 0.7, 0.2 + rand() * 0.3, at.z + (rand() - 0.5) * 0.7);
+    s.userData = { vy: 0.6 + rand() * 0.6, life: 0, max: 1 + rand() * 0.6 };
+    scene.add(s);
+    sparkles.push(s);
+  }
+}
+
+// Collapses a built group into one mesh: one draw call per crop instead of dozens.
+function bake(group) {
+  group.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
+  const rel = new THREE.Matrix4();
+  const geos = [];
+  group.traverse((o) => {
+    if (!o.isMesh) return;
+    const g = o.geometry.clone();
+    if (g.attributes.uv) g.deleteAttribute('uv');
+    g.applyMatrix4(rel.multiplyMatrices(inv, o.matrixWorld));
+    geos.push(g);
+    o.geometry.dispose();
+  });
+  const merged = mergeGeometries(geos, false);
+  geos.forEach((g) => g.dispose());
+  const m = new THREE.Mesh(merged, vcMat);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+// ---------- the floating plot ----------
+const N = 6;
+const world = new THREE.Group();
+scene.add(world);
+{
+  const island = new THREE.Group();
+  island.add(part(new RoundedBoxGeometry(N + 0.3, 0.42, N + 0.3, 2, 0.06), '#b4612a', { y: -0.31, ao: 0, vary: 0 }));
+  island.add(part(new RoundedBoxGeometry(N + 0.14, 0.16, N + 0.14, 2, 0.05), '#8d4a22', { y: -0.58, ao: 0, vary: 0 }));
+  // Small earth teeth along the underside, like a lifted chunk of field.
+  const h = (N + 0.1) / 2;
+  for (let k = -h + 0.25; k < h; k += 0.5) {
+    for (const [x, z] of [[k, h - 0.14], [h - 0.14, k], [k, -h + 0.14], [-h + 0.14, k]]) {
+      island.add(part(new THREE.ConeGeometry(0.12 + rand() * 0.05, 0.2 + rand() * 0.12, 4), rand() > 0.75 ? '#9a8f84' : '#86441f', { x, y: -0.74, z, rx: Math.PI, ry: rand() * 2, ao: 0, vary: 0.1 }));
+    }
+  }
+  world.add(bake(island));
+}
+
+const tiles = [];
+const tileField = new THREE.Group();
+for (let i = 0; i < N; i++) {
+  for (let j = 0; j < N; j++) {
+    const x = j - (N - 1) / 2, z = i - (N - 1) / 2;
+    tileField.add(part(new RoundedBoxGeometry(0.92, 0.14, 0.92, 2, 0.03), '#c26e31', { x, y: -0.04, z, ao: 0, vary: 0.1 }));
+    tiles.push({ i, j, x, z, used: false });
+  }
+}
+const tileMesh = bake(tileField);
+world.add(tileMesh);
+const TILE_VERTS = tileMesh.geometry.attributes.position.count / tiles.length;
+const tileAt = (i, j) => tiles[i * N + j];
+const GRASS = new THREE.Color('#7d9b40');
+function toGrass(tile) {
+  const colors = tileMesh.geometry.attributes.color;
+  const start = (tile.i * N + tile.j) * TILE_VERTS;
+  const shade = 0.96 + rand() * 0.08;
+  for (let v = start; v < start + TILE_VERTS; v++) colors.setXYZ(v, GRASS.r * shade, GRASS.g * shade, GRASS.b * shade);
+  colors.needsUpdate = true;
+}
+
+// ---------- crops ----------
+const sway = [];
+function ribbedPumpkin(r, color) {
+  const geo = new THREE.SphereGeometry(r, 16, 9);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const rib = 0.88 + 0.12 * Math.abs(Math.cos(Math.atan2(z, x) * 5));
+    p.setXYZ(i, x * rib, y * 0.68, z * rib);
+  }
+  return part(geo, color, { y: r * 0.62, ao: 0.4, aoH: r * 1.3, vary: 0.06 });
+}
+const builders = {
+  pumpkin() {
+    const g = new THREE.Group();
+    g.add(ribbedPumpkin(0.34, '#f2a43a'));
+    g.add(part(new THREE.CylinderGeometry(0.03, 0.05, 0.16, 5), '#5c6e2a', { y: 0.5, rz: 0.3 }));
+    for (let k = 0; k < 3; k++) {
+      const a = k * 2.1 + rand();
+      g.add(part(new THREE.ConeGeometry(0.14, 0.03, 5), '#6b9137', { x: Math.cos(a) * 0.32, y: 0.03, z: Math.sin(a) * 0.32, ao: 0.15 }));
+    }
+    return g;
+  },
+  bigPumpkin() {
+    const g = new THREE.Group();
+    g.add(ribbedPumpkin(0.82, '#f0a033'));
+    g.add(part(new THREE.CylinderGeometry(0.06, 0.1, 0.3, 6), '#5c6e2a', { y: 1.15, rz: 0.25 }));
+    for (let k = 0; k < 5; k++) {
+      const a = k * 1.3 + rand();
+      g.add(part(new THREE.ConeGeometry(0.28, 0.05, 5), '#6b9137', { x: Math.cos(a) * 0.82, y: 0.04, z: Math.sin(a) * 0.82, ao: 0.15 }));
+    }
+    return g;
+  },
+  wheat() {
+    const g = new THREE.Group();
+    for (let k = 0; k < 26; k++) {
+      const tuft = new THREE.Group();
+      const h = 0.5 + rand() * 0.2;
+      tuft.position.set((rand() - 0.5) * 0.8, 0, (rand() - 0.5) * 0.8);
+      tuft.add(part(new THREE.BoxGeometry(0.025, h, 0.025), '#c99a46', { y: h / 2, ao: 0.45, aoH: 0.6 }));
+      tuft.add(part(new THREE.OctahedronGeometry(0.06, 0), '#f2c766', { y: h + 0.05, ao: 0, vary: 0.14 }));
+      tuft.userData = { phase: rand() * 6, amp: 0.05 + rand() * 0.04 };
+      g.add(tuft);
+    }
+    return g;
+  },
+  carrot() {
+    const g = new THREE.Group();
+    for (const dz of [-0.27, 0, 0.27]) {
+      for (const dx of [-0.27, 0, 0.27]) {
+        const x = dx + (rand() - 0.5) * 0.05, z = dz + (rand() - 0.5) * 0.05;
+        g.add(part(new THREE.CylinderGeometry(0.065, 0.04, 0.06, 6), '#ec7d33', { x, y: 0.04, z, ao: 0.1 }));
+        for (let k = 0; k < 3; k++) g.add(part(new THREE.ConeGeometry(0.04, 0.3, 4), '#5f8f34', { x: x + (k - 1) * 0.03, y: 0.19, z, rz: (k - 1) * 0.42, ao: 0.5, aoH: 0.35 }));
+      }
+    }
+    return g;
+  },
+  tree() {
+    const g = new THREE.Group();
+    g.add(part(new THREE.CylinderGeometry(0.065, 0.11, 0.55, 6), '#7a4b2a', { y: 0.27, jit: 0.015 }));
+    const crown = new THREE.Group();
+    crown.add(part(new THREE.IcosahedronGeometry(0.42, 0), '#5f8c34', { y: 0.78, jit: 0.08, aoH: 1.2, ao: 0.35 }));
+    crown.add(part(new THREE.IcosahedronGeometry(0.28, 0), '#7aa443', { x: 0.2, y: 0.98, z: 0.1, jit: 0.05, aoH: 1.2, ao: 0.3 }));
+    crown.add(part(new THREE.IcosahedronGeometry(0.22, 0), '#6a9a3a', { x: -0.2, y: 0.9, z: -0.14, jit: 0.05, aoH: 1.2, ao: 0.3 }));
+    crown.userData = { phase: rand() * 6, amp: 0.02 };
+    g.add(crown);
+    for (let k = 0; k < 6; k++) {
+      const a = k * 1.05 + rand() * 0.4;
+      g.add(part(new THREE.IcosahedronGeometry(0.08, 0), k % 2 ? '#7d3f60' : '#94507a', { x: Math.cos(a) * 0.3, y: 0.08, z: Math.sin(a) * 0.3, ao: 0.25, aoH: 0.16 }));
+    }
+    return g;
+  },
+  bush() {
+    const g = new THREE.Group();
+    g.add(part(new THREE.IcosahedronGeometry(0.3, 0), '#5f8c34', { y: 0.24, jit: 0.05, aoH: 0.5 }));
+    g.add(part(new THREE.IcosahedronGeometry(0.2, 0), '#7aa443', { x: 0.22, y: 0.16, z: -0.12, jit: 0.04, aoH: 0.5 }));
+    const palette = ['#f0a7c4', '#fbe7ef', '#d98fb2', '#f6d36d'];
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2 + rand() * 0.4, r = 0.2 + rand() * 0.1;
+      const fx = Math.cos(a) * r, fz = Math.sin(a) * r, fy = 0.32 + rand() * 0.16;
+      const color = palette[k % palette.length];
+      for (let p = 0; p < 5; p++) {
+        const pa = (p / 5) * Math.PI * 2;
+        g.add(part(new THREE.SphereGeometry(0.035, 4, 3), color, { x: fx + Math.cos(pa) * 0.04, y: fy, z: fz + Math.sin(pa) * 0.04, ao: 0 }));
+      }
+      g.add(part(new THREE.SphereGeometry(0.03, 4, 3), '#f6c445', { x: fx, y: fy + 0.012, z: fz, ao: 0 }));
+    }
+    return g;
+  },
+  sunflower() {
+    const g = new THREE.Group();
+    for (const [dx, dz, h] of [[-0.18, -0.12, 0.75], [0.2, 0.14, 0.6], [0.16, -0.22, 0.5]]) {
+      const plantG = new THREE.Group();
+      plantG.position.set(dx, 0, dz);
+      plantG.add(part(new THREE.CylinderGeometry(0.03, 0.04, h, 5), '#5f8c34', { y: h / 2, aoH: 0.6 }));
+      plantG.add(part(new THREE.ConeGeometry(0.1, 0.02, 4), '#6b9a3a', { x: 0.07, y: h * 0.45, rz: -0.6, ao: 0 }));
+      const head = new THREE.Group();
+      head.position.y = h;
+      head.rotation.x = -0.6;
+      for (let p = 0; p < 11; p++) {
+        const a = (p / 11) * Math.PI * 2;
+        head.add(part(new THREE.ConeGeometry(0.045, 0.13, 3), '#f5bf2e', { x: Math.cos(a) * 0.11, z: Math.sin(a) * 0.11, rx: Math.PI / 2, ry: -a + Math.PI / 2, ao: 0, vary: 0.1 }));
+      }
+      head.add(part(new THREE.CylinderGeometry(0.085, 0.085, 0.04, 8), '#6b4220', { ao: 0 }));
+      plantG.add(head);
+      plantG.userData = { phase: rand() * 6, amp: 0.035 };
+      g.add(plantG);
+    }
+    return g;
+  },
+};
+
+const STAGE_SCALE = [0, 0.38, 0.62, 0.84, 1];
+const crops = [];
+const freeOrder = [];
+const SWAYS = { wheat: 0.045, sunflower: 0.035, tree: 0.018 };
+function place(kind, x, z, stageLevel, animate) {
+  const g = new THREE.Group();
+  g.add(bake(builders[kind]()));
+  g.position.set(x, 0.03, z);
+  if (SWAYS[kind] && !reduceMotion) { g.userData = { phase: rand() * 6, amp: SWAYS[kind] }; sway.push(g); }
+  g.rotation.y = Math.floor(rand() * 4) * (Math.PI / 2) + (rand() - 0.5) * 0.25;
+  world.add(g);
+  const crop = { g, kind, stage: stageLevel };
+  crops.push(crop);
+  if (animate) { g.scale.setScalar(0.001); growTo(crop, stageLevel); sparkle({ x, z }); }
+  else g.scale.setScalar(STAGE_SCALE[stageLevel]);
+  return crop;
+}
+function plant(kind, stageLevel = 1, animate = true) {
+  const tile = freeOrder.find((t) => !t.used);
+  if (!tile) return null;
+  tile.used = true;
+  if (kind === 'tree' || kind === 'bush' || kind === 'sunflower') toGrass(tile);
+  return place(kind, tile.x, tile.z, stageLevel, animate);
+}
+function growTo(crop, level) {
+  crop.stage = level;
+  const s = STAGE_SCALE[level];
+  ['x', 'y', 'z'].forEach((axis, k) => tween(crop.g.scale, axis, s, 750, backOut, k * 20));
+}
+
+// ---------- water ----------
+const dropGeo = new THREE.ConeGeometry(0.025, 0.12, 4);
+const dropMat = new THREE.MeshStandardMaterial({ color: '#a9d4f0', transparent: true, opacity: 0.85, roughness: 0.2 });
+const drops = [];
+function rain() {
+  if (reduceMotion) return;
+  for (let k = 0; k < 45; k++) {
+    const d = new THREE.Mesh(dropGeo, dropMat);
+    d.rotation.x = Math.PI;
+    d.position.set((rand() - 0.5) * N, 3 + rand() * 3, (rand() - 0.5) * N);
+    d.userData.v = 5 + rand() * 2.5;
+    scene.add(d);
+    drops.push(d);
+  }
+}
+
+// ---------- visitors: butterflies, fireflies, clouds ----------
+const butterflies = [];
+function addButterfly() {
+  const g = new THREE.Group();
+  const palettes = [['#8c4a6b', '#e2a6c3'], ['#ef9f35', '#f8d77a'], ['#6f93b8', '#cfe0ee']];
+  const [a, b] = palettes[butterflies.length % palettes.length];
+  const wing = (side) => {
+    const w = new THREE.Group();
+    w.add(part(new THREE.CircleGeometry(0.14, 5), a, { x: side * 0.12, rx: -Math.PI / 2, ao: 0 }));
+    w.add(part(new THREE.CircleGeometry(0.09, 5), b, { x: side * 0.1, z: 0.11, y: 0.002, rx: -Math.PI / 2, ao: 0 }));
+    w.children.forEach((m) => { m.material = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide }); });
+    return w;
+  };
+  const lw = wing(-1), rw = wing(1);
+  g.add(lw, rw, part(new THREE.CapsuleGeometry(0.02, 0.16, 2, 4), '#3a2a20', { rx: Math.PI / 2, ao: 0 }));
+  g.userData = { lw, rw, phase: rand() * Math.PI * 2, r: 1.8 + rand() * 1.4, h: 1.0 + rand() * 0.9, speed: 0.3 + rand() * 0.15 };
+  scene.add(g);
+  butterflies.push(g);
+}
+const fireflies = [];
+function addFireflies(count) {
+  for (let k = 0; k < count; k++) {
+    const f = glowSprite(0.32);
+    f.userData = { x: (rand() - 0.5) * N, z: (rand() - 0.5) * N, y: 0.4 + rand() * 1.3, p: rand() * 6 };
+    scene.add(f);
+    fireflies.push(f);
+  }
+}
+// ---------- starting garden: twelve days of earlier care ----------
+// W wheat, T tree, C carrot, p pumpkin, P one giant pumpkin over a 2x2 block, F sunflower, B flower bush, . free for today
+const LAYOUT = ['WWTCpW', 'WPPCTW', 'CPPWpC', 'TpCF..', 'WWCB..', 'CTWp..'];
+const KIND = { W: 'wheat', T: 'tree', C: 'carrot', p: 'pumpkin', F: 'sunflower', B: 'bush' };
+let giantPlaced = false;
+LAYOUT.forEach((row, i) => [...row].forEach((ch, j) => {
+  const tile = tileAt(i, j);
+  if (ch === '.') { freeOrder.push(tile); return; }
+  tile.used = true;
+  if (ch === 'P') {
+    if (!giantPlaced) { giantPlaced = true; place('bigPumpkin', tile.x + 0.5, tile.z + 0.5, 4, false); }
+    return;
+  }
+  const kind = KIND[ch];
+  if (kind === 'tree' || kind === 'bush' || kind === 'sunflower') toGrass(tile);
+  place(kind, tile.x, tile.z, rand() > 0.25 ? 4 : 3, false);
+}));
+addButterfly();
+addFireflies(5);
+
+// ---------- habit actions ----------
+const produceCycle = ['carrot', 'pumpkin', 'wheat'];
+const mealCycle = ['bush', 'tree', 'sunflower'];
+const FULL = 'Bugünlük boş tarla kalmadı. Uygulamada tarla günler geçtikçe genişleyecek.';
+const actions = {
+  water() {
+    rain();
+    const growing = crops.filter((c) => c.stage < 4);
+    growing.slice(0, 4).forEach((c, k) => setTimeout(() => growTo(c, c.stage + 1), reduceMotion ? 0 : 500 + k * 120));
+    return growing.length ? 'Ekinler suyunu aldı, biraz daha büyüdüler.' : 'Toprak suyunu aldı, her şey yerinde.';
+  },
+  produce() {
+    const crop = plant(produceCycle[counts.produce % produceCycle.length], 1);
+    return crop ? 'Yeni bir ekin filizlendi.' : FULL;
+  },
+  meal() {
+    const kind = mealCycle[counts.meal % mealCycle.length];
+    const crop = plant(kind, 2);
+    if (!crop) return FULL;
+    return kind === 'tree' ? 'Yeni bir ağaç kök saldı.' : kind === 'sunflower' ? 'Ayçiçekleri güne döndü.' : 'Bir çiçek açtı.';
+  },
+  walk() { addButterfly(); return 'Bir kelebek bahçene uğradı.'; },
+  sleep() { addFireflies(8); return 'Ateş böcekleri geldi. İyi uykular.'; },
+};
+document.querySelectorAll('.habit').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.key;
+    counts[key] += 1;
+    paintHabit(key);
+    toast(actions[key]());
+  });
+});
+document.getElementById('hard').addEventListener('click', () => {
+  toast('Zor günlerde bahçe solmaz, sadece dinlenir. Serin bozulmadı.');
+});
+
+// ---------- loop ----------
+const clock = new THREE.Clock();
+let onScreen = true;
+new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; }).observe(stage);
+let frameNo = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!onScreen || document.hidden) { clock.getDelta(); return; }
+  frameNo += 1;
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  for (let k = tweens.length - 1; k >= 0; k--) {
+    const tw = tweens[k];
+    if (now < tw.t0) continue;
+    if (tw.from === null) tw.from = tw.obj[tw.prop];
+    const p = Math.min(1, (now - tw.t0) / tw.dur);
+    tw.obj[tw.prop] = tw.from + (tw.to - tw.from) * tw.ease(p);
+    if (p >= 1) tweens.splice(k, 1);
+  }
+  for (let k = drops.length - 1; k >= 0; k--) {
+    const d = drops[k];
+    d.position.y -= d.userData.v * dt;
+    if (d.position.y < 0.08) { scene.remove(d); drops.splice(k, 1); }
+  }
+  for (let k = sparkles.length - 1; k >= 0; k--) {
+    const s = sparkles[k], u = s.userData;
+    u.life += dt;
+    s.position.y += u.vy * dt;
+    s.material.opacity = Math.max(0, 1 - u.life / u.max);
+    if (u.life >= u.max) { scene.remove(s); s.material.dispose(); sparkles.splice(k, 1); }
+  }
+  if (!reduceMotion) {
+    sway.forEach((o) => { o.rotation.z = Math.sin(t * 1.4 + o.userData.phase) * o.userData.amp; o.rotation.x = Math.cos(t * 1.1 + o.userData.phase) * o.userData.amp * 0.6; });
+  }
+  butterflies.forEach((b) => {
+    const u = b.userData, a = t * u.speed + u.phase;
+    b.position.set(Math.cos(a) * u.r, u.h + Math.sin(t * 1.6 + u.phase) * 0.18, Math.sin(a) * u.r);
+    b.rotation.y = -a;
+    const flap = reduceMotion ? 0.4 : Math.sin(t * 16 + u.phase) * 0.9;
+    u.lw.rotation.z = flap; u.rw.rotation.z = -flap;
+  });
+  fireflies.forEach((f) => {
+    const u = f.userData;
+    f.position.set(u.x + Math.sin(t * 0.6 + u.p) * 0.35, u.y + Math.sin(t * 1.3 + u.p) * 0.18, u.z + Math.cos(t * 0.5 + u.p) * 0.35);
+    f.material.opacity = 0.55 + 0.45 * Math.sin(t * 2.2 + u.p * 3);
+  });
+
+  controls.update();
+  if (frameNo === 1 || tweens.length || frameNo % 6 === 0) renderer.shadowMap.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(frame);
+</script>
