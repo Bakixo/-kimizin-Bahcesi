@@ -455,12 +455,72 @@ renderer.toneMappingExposure = 1.12;
 stage.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
-// Sky is a small canvas repainted when the sun moves or the weather changes; stars are drawn into it at night.
-const skyCanvas = document.createElement('canvas');
-skyCanvas.width = 128; skyCanvas.height = 256;
-const skyTex = new THREE.CanvasTexture(skyCanvas);
-skyTex.colorSpace = THREE.SRGBColorSpace;
-scene.background = skyTex;
+// Sky is one full-screen shader pass drawn before the scene: a per-pixel gradient, and at night crisp
+// twinkling stars, a faint Milky Way and the moon with its real phase. Stars are computed in CSS pixels,
+// so they stay 1-2 px sharp at any screen size, and they drift as the island turns.
+const skyUniforms = {
+  uTop: { value: new THREE.Color() }, uMid: { value: new THREE.Color() }, uHor: { value: new THREE.Color() },
+  uStars: { value: 0 }, uTime: { value: 0 }, uRot: { value: 0 }, uDpr: { value: 1 },
+  uMoon: { value: new THREE.Vector3(0.7, 0.8, 0) }, uPhase: { value: 0.5 },
+};
+const skyScene = new THREE.Scene();
+const skyCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+skyScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+  uniforms: skyUniforms, depthTest: false, depthWrite: false, toneMapped: false,
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+  fragmentShader: `
+    uniform vec3 uTop, uMid, uHor, uMoon; uniform float uStars, uTime, uRot, uDpr, uPhase;
+    varying vec2 vUv;
+    float h1(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    vec2 h2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+    float noise(vec2 p) {
+      vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(h1(i), h1(i + vec2(1, 0)), f.x), mix(h1(i + vec2(0, 1)), h1(i + vec2(1, 1)), f.x), f.y);
+    }
+    // One layer of stars on a grid of 'cell' CSS pixels; 'keep' is the share of cells that hold a star.
+    vec3 stars(vec2 px, float cell, float keep, float big) {
+      vec2 id = floor(px / cell);
+      float pick = h1(id + 17.0);
+      if (pick > keep) return vec3(0.0);
+      vec2 at = (id + 0.2 + 0.6 * h2(id)) * cell;
+      float d = length(px - at);
+      float r = mix(0.45, 1.0 + big, h1(id + 3.0));
+      float core = smoothstep(r + 0.7, r - 0.3, d);
+      float glow = big * exp(-d * d / (6.0 * r * r)) * 0.22;
+      float tw = 0.7 + 0.3 * sin(uTime * (1.2 + 2.5 * h1(id + 9.0)) + 40.0 * pick);
+      vec3 tint = mix(vec3(0.78, 0.86, 1.0), vec3(1.0, 0.92, 0.78), h1(id + 5.0));
+      return tint * (core + glow) * tw;
+    }
+    void main() {
+      vec3 col = vUv.y > 0.4 ? mix(uMid, uTop, smoothstep(0.4, 1.0, vUv.y)) : mix(uHor, uMid, smoothstep(0.0, 0.4, vUv.y));
+      if (uStars > 0.01) {
+        vec2 px = gl_FragCoord.xy / uDpr + vec2(uRot * 160.0, 0.0);
+        float high = smoothstep(0.12, 0.55, vUv.y);
+        // Milky Way: a soft diagonal band of noise with extra faint stars inside it.
+        float band = exp(-pow((vUv.y - 0.62 - (vUv.x - 0.5) * 0.55 + sin(uRot) * 0.08) * 5.5, 2.0));
+        float cloud = noise(px * 0.025) * 0.6 + noise(px * 0.07) * 0.4;
+        col += vec3(0.42, 0.46, 0.68) * band * cloud * cloud * 0.14 * uStars * high;
+        vec3 s = stars(px, 9.0, 0.08 + 0.22 * band, 0.0) * 0.65 + stars(px + 400.0, 26.0, 0.26, 0.7) + stars(px + 900.0, 80.0, 0.22, 1.1);
+        col += s * uStars * high;
+      }
+      if (uMoon.z > 0.01) {
+        vec2 px = gl_FragCoord.xy / uDpr, m = uMoon.xy;
+        float R = 11.0, d = length(px - m);
+        vec2 q = (px - m) / R;
+        float k = cos(uPhase * 6.2832), edge = k * sqrt(max(0.0, 1.0 - q.y * q.y));
+        float lit = smoothstep(-0.06, 0.06, (uPhase < 0.5 ? q.x : -q.x) - edge);
+        float disc = smoothstep(R + 0.8, R - 0.6, d);
+        float spots = 0.88 + 0.12 * noise(q * 3.0 + 4.0);
+        vec3 moonCol = vec3(1.0, 0.97, 0.88) * spots;
+        float light = 1.0 - k * 0.5;
+        col = mix(col, mix(col * 1.4 + 0.03, moonCol, lit), disc * uMoon.z);
+        col += vec3(0.55, 0.62, 0.85) * exp(-d / (R * 2.6)) * 0.22 * light * uMoon.z;
+      }
+      gl_FragColor = vec4(col, 1.0);
+      #include <colorspace_fragment>
+    }`,
+})));
+renderer.autoClear = false;
 scene.fog = new THREE.Fog('#e6cdb3', 22, 40);
 
 const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 60);
@@ -779,6 +839,24 @@ const builders = {
   },
 };
 
+// A lantern by the bench: off by day, a warm pool of light on the path at night.
+const lantern = new THREE.PointLight('#ffb766', 0, 2.6, 1.8);
+lantern.position.set(0.36, 0.78, 1.82);
+scene.add(lantern);
+{
+  const lamp = new THREE.Group();
+  lamp.add(part(new THREE.CylinderGeometry(0.018, 0.024, 0.62, 5), '#4a3a30', { y: 0.31, ao: 0 }));
+  lamp.add(part(new THREE.BoxGeometry(0.1, 0.03, 0.1), '#4a3a30', { y: 0.7, ao: 0 }));
+  const m = bake(lamp);
+  m.position.set(0.36, 0.03, 1.82);
+  m.castShadow = true;
+  scene.add(m);
+}
+const lanternGlow = glowSprite(0.55, '#ffcf8a');
+lanternGlow.position.set(0.36, 0.66, 1.82);
+lanternGlow.material.opacity = 0;
+scene.add(lanternGlow);
+
 const STAGE_SCALE = [0, 0.38, 0.62, 0.84, 1];
 const crops = [];
 const freeBy = { left: [], right: [] };
@@ -898,7 +976,7 @@ function buildGarden({ left, right, tints, bizStage }) {
 }
 
 // ---------- real sky: Ankara sun, moon and weather ----------
-// Preview overrides for testing: ?saat=22:30 and ?hava=acik|parcali|kapali|sis|cisenti|yagmur|kar|firtina
+// Preview overrides for testing: ?saat=22:30, ?ay=0.5 (moon phase) and ?hava=acik|parcali|kapali|sis|cisenti|yagmur|kar|firtina
 const LAT = 39.93, LON = 32.86, TZ = 'Europe/Istanbul';
 const params = new URLSearchParams(location.search);
 let clockOffset = 0;
@@ -921,14 +999,15 @@ function sunPosition(date) {
   const az = Math.atan2(-Math.sin(H), Math.tan(dec) * Math.cos(la) - Math.sin(la) * Math.cos(H));
   return { el: el / rad, az: (az / rad + 360) % 360 };
 }
-function moonLight(date) {
-  const phase = (((date.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000 / 29.530588) % 1 + 1) % 1;
-  return (1 - Math.cos(phase * 2 * Math.PI)) / 2;
+function moonPhase(date) { // 0 new, 0.25 first quarter, 0.5 full, 0.75 last quarter; preview with ?ay=0.5
+  if (/^(0?\.\d+|[01])$/.test(params.get('ay') || '')) return Number(params.get('ay'));
+  return (((date.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000 / 29.530588) % 1 + 1) % 1;
 }
+function moonLight(date) { return (1 - Math.cos(moonPhase(date) * 2 * Math.PI)) / 2; }
 
 // Sky keyframes by sun elevation. el 8 is the original golden-hour look.
 const SKY = [
-  { el: -18, top: '#0a1230', mid: '#18224a', hor: '#2b3360', fog: '#1d2546', hs: '#7a8fd0', hg: '#2e2638', hi: 0.8, key: '#aec4ff', ki: 0.9, rim: 0.35, exp: 1.0 },
+  { el: -18, top: '#03071a', mid: '#0c1636', hor: '#22305e', fog: '#141c3c', hs: '#5d74c2', hg: '#161627', hi: 0.62, key: '#b9cbff', ki: 1.35, rim: 0.7, exp: 1.06 },
   { el: -6, top: '#1a2756', mid: '#55497c', hor: '#c98576', fog: '#6a5872', hs: '#8d90c4', hg: '#4a3040', hi: 0.75, key: '#ff9d70', ki: 0.7, rim: 0.45, exp: 1.04 },
   { el: 0, top: '#5d7cad', mid: '#c79899', hor: '#f3a86a', fog: '#d9a07c', hs: '#b5c4de', hg: '#7a4a32', hi: 0.95, key: '#ff9450', ki: 1.8, rim: 0.6, exp: 1.08 },
   { el: 8, top: '#9fb3c2', mid: '#c9c6c0', hor: '#e9cdb0', fog: '#e6cdb3', hs: '#c9dcec', hg: '#8a5a36', hi: 1.15, key: '#ffc184', ki: 3.2, rim: 0.7, exp: 1.12 },
@@ -1014,19 +1093,22 @@ scene.add(snow);
 const rainMatrix = new THREE.Matrix4();
 let windAmp = 1, lightning = 0, nextFlash = 0, skyExposure = 1.12;
 
-const STARS = Array.from({ length: 90 }, () => [rand(), rand() * 0.62, 0.5 + rand() * 1.1, 0.4 + rand() * 0.6]);
 function paintSky(s, starAlpha) {
-  const g = skyCanvas.getContext('2d');
-  const grd = g.createLinearGradient(0, 0, 0, 256);
-  grd.addColorStop(0, s.top); grd.addColorStop(0.6, s.mid); grd.addColorStop(1, s.hor);
-  g.fillStyle = grd; g.fillRect(0, 0, 128, 256);
-  if (starAlpha > 0.02) {
-    for (const [x, y, r, a] of STARS) {
-      g.fillStyle = `rgba(255,250,235,${(a * starAlpha).toFixed(3)})`;
-      g.fillRect(x * 128, y * 256, r * 0.6, r);
-    }
-  }
-  skyTex.needsUpdate = true;
+  skyUniforms.uTop.value.set(s.top); skyUniforms.uMid.value.set(s.mid); skyUniforms.uHor.value.set(s.hor);
+  skyUniforms.uStars.value = starAlpha;
+}
+// The moon's screen spot follows its compass bearing relative to the camera, so it slides across the sky
+// as the island turns. Bearings behind the camera map to the edges, where it fades out before wrapping.
+const moonDir = new THREE.Vector3();
+let moonShow = 0;
+function placeMoon() {
+  if (moonShow < 0.01) { skyUniforms.uMoon.value.z = 0; return; }
+  const camBearing = Math.atan2(-camera.position.x, -camera.position.z); // the way the camera looks
+  let rel = Math.atan2(moonDir.x, moonDir.z) - camBearing;
+  rel = Math.atan2(Math.sin(rel), Math.cos(rel)); // -PI..PI, 0 = straight ahead
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const edge = Math.min(1, Math.max(0, (Math.PI * 0.92 - Math.abs(rel)) * 4));
+  skyUniforms.uMoon.value.set(w * (0.5 - 0.4 * rel / Math.PI * 1.1), h * 0.84, moonShow * edge);
 }
 
 const sunDir = new THREE.Vector3();
@@ -1045,7 +1127,8 @@ function updateSky() {
   for (const key of ['top', 'mid', 'hor', 'fog']) s[key] = '#' + mixHex(s[key], grey, gloom * 0.75);
   isNight = el < -6;
   const night = Math.min(1, Math.max(0, (-el - 4) / 10));
-  paintSky(s, night * (1 - gloom));
+  const clearSky = Math.max(0, 1 - gloom * 1.5); // rain or overcast hides stars and moon
+  paintSky(s, night * clearSky);
 
   hemi.color.set(s.hs); hemi.groundColor.set(s.hg); hemi.intensity = s.hi * (1 - 0.12 * gloom);
   rim.intensity = s.rim * (1 - 0.4 * gloom);
@@ -1054,19 +1137,25 @@ function updateSky() {
   if (isNight) {
     compassDir((az + 180) % 360, 42, sunDir); // the moon, kept roughly opposite the sun
     sun.color.set(s.key);
-    sun.intensity = s.ki * (0.45 + 0.55 * moonLight(date)) * (1 - 0.7 * gloom);
+    sun.intensity = s.ki * (0.55 + 0.45 * moonLight(date)) * (1 - 0.7 * gloom);
+    moonDir.copy(sunDir);
+    skyUniforms.uPhase.value = moonPhase(date);
   } else {
     compassDir(az, Math.max(el, 9), sunDir); // keep a usable shadow angle near sunrise and sunset
     sun.color.set(s.key);
     sun.intensity = s.ki * (1 - 0.72 * gloom);
   }
   sun.position.copy(sunDir).multiplyScalar(12);
+  moonShow = night * clearSky * Math.min(1, moonLight(date) * 6); // no disc around new moon
+  lantern.intensity = 1.3 * Math.min(1, Math.max(0, (-el + 2) / 8));
+  lanternGlow.material.opacity = 0.8 * Math.min(1, lantern.intensity / 1.3);
+  rim.color.set(isNight ? '#8fa8e8' : '#9fc0e0');
 
   scene.fog.color.set(s.fog);
   scene.fog.near = weather.kind === 'fog' ? 9 : 22;
   scene.fog.far = weather.kind === 'fog' ? 24 : 40;
-  cloudMat.emissive.set(isNight ? '#1c2032' : '#ffffff');
-  cloudMat.color.set('#' + mixHex(isNight ? '#5d6584' : el < 4 ? '#f6d2bd' : '#ffffff', isNight ? '#2f3445' : '#9aa1a8', gloom));
+  cloudMat.emissive.set(isNight ? '#0e111b' : '#ffffff');
+  cloudMat.color.set('#' + mixHex(isNight ? '#454a5e' : el < 4 ? '#f6d2bd' : '#ffffff', isNight ? '#2f3445' : '#9aa1a8', gloom));
   const count = weather.cover != null && weather.state === 'live' ? Math.max(w.clouds, Math.round(weather.cover / 100 * 7)) : w.clouds;
   clouds.forEach((c, k) => { c.visible = k < count; });
   rainMesh.count = reduceMotion ? 0 : (w.rain || 0);
@@ -1893,6 +1982,12 @@ function frame(now) {
 
   controls.update();
   if (frameNo === 1 || tweens.length || frameNo % 6 === 0) renderer.shadowMap.needsUpdate = true;
+  skyUniforms.uTime.value = reduceMotion ? 0 : t;
+  skyUniforms.uRot.value = camAz;
+  skyUniforms.uDpr.value = renderer.getPixelRatio();
+  placeMoon();
+  renderer.clear();
+  renderer.render(skyScene, skyCam);
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
