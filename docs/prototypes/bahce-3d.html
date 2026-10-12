@@ -931,7 +931,7 @@ function rain(side) {
   }
 }
 
-// ---------- visitors: butterflies, fireflies, clouds ----------
+// ---------- visitors: butterflies, fireflies and ladybugs ----------
 const butterflies = [];
 function addButterfly() {
   const g = new THREE.Group();
@@ -1070,14 +1070,14 @@ function skyAt(el) {
 
 // WMO weather codes from Open-Meteo, grouped into the looks the garden can show.
 const WEATHER = {
-  clear: { label: 'Açık', clouds: 0, gloom: 0 },
-  partly: { label: 'Parçalı bulutlu', clouds: 4, gloom: 0.15 },
-  overcast: { label: 'Kapalı', clouds: 7, gloom: 0.6 },
-  fog: { label: 'Sisli', clouds: 3, gloom: 0.55 },
-  drizzle: { label: 'Çisenti', clouds: 6, gloom: 0.6, rain: 120 },
-  rain: { label: 'Yağmurlu', clouds: 7, gloom: 0.7, rain: 320 },
-  snow: { label: 'Karlı', clouds: 6, gloom: 0.55, snow: 320 },
-  storm: { label: 'Gök gürültülü', clouds: 7, gloom: 0.8, rain: 420 },
+  clear: { label: 'Açık', gloom: 0 },
+  partly: { label: 'Parçalı bulutlu', gloom: 0.15 },
+  overcast: { label: 'Kapalı', gloom: 0.6 },
+  fog: { label: 'Sisli', gloom: 0.55 },
+  drizzle: { label: 'Çisenti', gloom: 0.6, rain: 120 },
+  rain: { label: 'Yağmurlu', gloom: 0.7, rain: 320 },
+  snow: { label: 'Karlı', gloom: 0.55, snow: 320 },
+  storm: { label: 'Gök gürültülü', gloom: 0.8, rain: 420 },
 };
 function kindFromCode(c) {
   if (c <= 1) return 'clear';
@@ -1093,47 +1093,6 @@ function kindFromCode(c) {
 const PREVIEW = { acik: 0, parcali: 2, kapali: 3, sis: 45, cisenti: 53, yagmur: 63, kar: 73, firtina: 95 };
 let weather = { kind: 'clear', temp: null, cover: 0, wind: 8, state: 'loading' };
 
-// Clouds: seven faceted low-poly clouds in the same flat-shaded style as the garden. Each is a tidy stack
-// (a wide base row and one or two puffs on top) merged into one mesh, with a flat underside and a cream
-// top fading to a warm sand belly painted into vertex colours, so they match the paper-and-earth palette.
-// They drift high in a band behind the plot as seen from the camera, so they always read as sky.
-const cloudMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.35 });
-const clouds = [];
-const CLOUD_TOP = new THREE.Color('#fffaf0'), CLOUD_BELLY = new THREE.Color('#e3d3bf');
-for (let k = 0; k < 7; k++) {
-  const geos = [];
-  const puff = (r, x, y, z) => {
-    const g = new THREE.IcosahedronGeometry(r, 1);
-    g.deleteAttribute('uv');
-    g.rotateY(rand() * Math.PI);
-    g.translate(x, y, z);
-    geos.push(g);
-  };
-  const base = 3 + Math.floor(rand() * 2);
-  for (let p = 0; p < base; p++) {
-    const u = p - (base - 1) / 2;
-    puff(0.26 + rand() * 0.05 - Math.abs(u) * 0.03, u * 0.36, 0.2, (rand() - 0.5) * 0.12);
-  }
-  puff(0.34 + rand() * 0.04, (rand() - 0.5) * 0.2, 0.42, 0);
-  if (base === 4) puff(0.24, 0.32 * (rand() > 0.5 ? 1 : -1), 0.4, 0.04);
-  const geo = mergeGeometries(geos);
-  const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
-  for (let v = 0; v < pos.count; v++) {
-    const y = Math.max(0.06, pos.getY(v));
-    pos.setY(v, y); // flat underside
-    tmpColor.copy(CLOUD_BELLY).lerp(CLOUD_TOP, Math.min(1, (y - 0.06) / 0.35));
-    col.set([tmpColor.r, tmpColor.g, tmpColor.b], v * 3);
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, cloudMat);
-  m.castShadow = true;
-  m.userData = { a: (k / 6 - 0.5) * 2.6 + (rand() - 0.5) * 0.3, r: 4.4 + rand() * 0.6, h: 1.1 + rand() * 0.8, s: 0.03 + rand() * 0.02, sc: 0.8 + rand() * 0.35 };
-  m.scale.setScalar(m.userData.sc);
-  m.visible = false;
-  scene.add(m);
-  clouds.push(m);
-}
 
 // Rain: one instanced mesh of thin streaks. Snow: one point cloud. Each is a single draw call.
 const RAIN_MAX = 420, SNOW_MAX = 320, SPAN = NX + 0.6;
@@ -1217,11 +1176,6 @@ function updateSky() {
   scene.fog.color.set(s.fog);
   scene.fog.near = weather.kind === 'fog' ? 9 : 22;
   scene.fog.far = weather.kind === 'fog' ? 24 : 40;
-  cloudMat.emissive.set(isNight ? '#0b0e18' : '#ffffff');
-  cloudMat.emissiveIntensity = isNight ? 1 : 0.35;
-  cloudMat.color.set('#' + mixHex(isNight ? '#3a4058' : el < 4 ? '#f8d4bf' : '#ffffff', isNight ? '#2a2f3e' : '#a3aab2', gloom));
-  const count = weather.cover != null && weather.state === 'live' ? Math.max(w.clouds, Math.round(weather.cover / 100 * 7)) : w.clouds;
-  clouds.forEach((c, k) => { c.visible = k < count; });
   rainMesh.count = reduceMotion ? 0 : (w.rain || 0);
   snow.visible = !reduceMotion && !!w.snow;
   windAmp = Math.min(2.2, Math.max(0.7, (weather.wind || 8) / 12));
@@ -2015,14 +1969,6 @@ function frame(now) {
   });
 
   const camAz = Math.atan2(camera.position.x, camera.position.z);
-  clouds.forEach((c) => {
-    if (!c.visible) return;
-    const u = c.userData;
-    if (!reduceMotion) { u.a += u.s * windAmp * dt; if (u.a > 1.4) u.a -= 2.8; }
-    const a = camAz + Math.PI + u.a;
-    c.position.set(Math.sin(a) * u.r, u.h, Math.cos(a) * u.r);
-    c.rotation.y = a;
-  });
   if (rainMesh.count) {
     const slant = (windAmp - 0.7) * 0.25;
     for (let k = 0; k < rainMesh.count; k++) {
