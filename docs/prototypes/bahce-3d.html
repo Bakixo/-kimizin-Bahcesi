@@ -1093,38 +1093,43 @@ function kindFromCode(c) {
 const PREVIEW = { acik: 0, parcali: 2, kapali: 3, sis: 45, cisenti: 53, yagmur: 63, kar: 73, firtina: 95 };
 let weather = { kind: 'clear', temp: null, cover: 0, wind: 8, state: 'loading' };
 
-// Clouds: seven soft cumulus shapes. Each is a few overlapping puffs merged into one mesh, with a flat
-// grey-blue belly and white tops painted into vertex colours. They drift in a band behind the plot as seen
-// from the camera, so they always read as sky, never as objects on the field.
-const cloudMat = new THREE.MeshLambertMaterial({ vertexColors: true, color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.25 });
+// Clouds: seven faceted low-poly clouds in the same flat-shaded style as the garden. Each is a tidy stack
+// (a wide base row and one or two puffs on top) merged into one mesh, with a flat underside and a cream
+// top fading to a warm sand belly painted into vertex colours, so they match the paper-and-earth palette.
+// They drift high in a band behind the plot as seen from the camera, so they always read as sky.
+const cloudMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.35 });
 const clouds = [];
-const CLOUD_TOP = new THREE.Color('#ffffff'), CLOUD_BELLY = new THREE.Color('#b9c6da');
+const CLOUD_TOP = new THREE.Color('#fffaf0'), CLOUD_BELLY = new THREE.Color('#e3d3bf');
 for (let k = 0; k < 7; k++) {
   const geos = [];
-  const puffs = 5 + Math.floor(rand() * 3);
-  const span = 0.95 + rand() * 0.5;
-  for (let p = 0; p < puffs; p++) {
-    const u = puffs === 1 ? 0 : p / (puffs - 1) - 0.5;   // -0.5 .. 0.5 along the cloud
-    const r = (0.42 - Math.abs(u) * 0.38) * (0.85 + rand() * 0.3) + 0.12;
-    const g = new THREE.IcosahedronGeometry(r, 2);
+  const puff = (r, x, y, z) => {
+    const g = new THREE.IcosahedronGeometry(r, 1);
     g.deleteAttribute('uv');
-    g.translate(u * span * 1.6 + (rand() - 0.5) * 0.12, r * 0.55 + (rand() - 0.5) * 0.06, (rand() - 0.5) * 0.35);
+    g.rotateY(rand() * Math.PI);
+    g.translate(x, y, z);
     geos.push(g);
+  };
+  const base = 3 + Math.floor(rand() * 2);
+  for (let p = 0; p < base; p++) {
+    const u = p - (base - 1) / 2;
+    puff(0.26 + rand() * 0.05 - Math.abs(u) * 0.03, u * 0.36, 0.2, (rand() - 0.5) * 0.12);
   }
+  puff(0.34 + rand() * 0.04, (rand() - 0.5) * 0.2, 0.42, 0);
+  if (base === 4) puff(0.24, 0.32 * (rand() > 0.5 ? 1 : -1), 0.4, 0.04);
   const geo = mergeGeometries(geos);
   const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
   for (let v = 0; v < pos.count; v++) {
-    const y = Math.max(0, pos.getY(v));
+    const y = Math.max(0.06, pos.getY(v));
     pos.setY(v, y); // flat underside
-    tmpColor.copy(CLOUD_BELLY).lerp(CLOUD_TOP, Math.min(1, Math.pow(y / 0.55, 0.8)));
+    tmpColor.copy(CLOUD_BELLY).lerp(CLOUD_TOP, Math.min(1, (y - 0.06) / 0.35));
     col.set([tmpColor.r, tmpColor.g, tmpColor.b], v * 3);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, cloudMat);
   m.castShadow = true;
-  m.userData = { a: (k / 6 - 0.5) * 2.6 + (rand() - 0.5) * 0.3, r: 4.2 + rand() * 0.8, h: 0.6 + rand() * 0.9, s: 0.03 + rand() * 0.02, sc: 0.75 + rand() * 0.35 };
-  m.scale.set(m.userData.sc, m.userData.sc * 0.8, m.userData.sc);
+  m.userData = { a: (k / 6 - 0.5) * 2.6 + (rand() - 0.5) * 0.3, r: 4.4 + rand() * 0.6, h: 1.1 + rand() * 0.8, s: 0.03 + rand() * 0.02, sc: 0.8 + rand() * 0.35 };
+  m.scale.setScalar(m.userData.sc);
   m.visible = false;
   scene.add(m);
   clouds.push(m);
@@ -1213,7 +1218,7 @@ function updateSky() {
   scene.fog.near = weather.kind === 'fog' ? 9 : 22;
   scene.fog.far = weather.kind === 'fog' ? 24 : 40;
   cloudMat.emissive.set(isNight ? '#0b0e18' : '#ffffff');
-  cloudMat.emissiveIntensity = isNight ? 1 : 0.25;
+  cloudMat.emissiveIntensity = isNight ? 1 : 0.35;
   cloudMat.color.set('#' + mixHex(isNight ? '#3a4058' : el < 4 ? '#f8d4bf' : '#ffffff', isNight ? '#2a2f3e' : '#a3aab2', gloom));
   const count = weather.cover != null && weather.state === 'live' ? Math.max(w.clouds, Math.round(weather.cover / 100 * 7)) : w.clouds;
   clouds.forEach((c, k) => { c.visible = k < count; });
